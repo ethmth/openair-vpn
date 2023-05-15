@@ -163,6 +163,9 @@ function connect() {
 
 	if [ ! -d "$DIR" ]; then
 		mkdir -p "$DIR"
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR
+		fi
 	fi
 
 	count=$(ls -a1 $DIR | grep ovpn | wc -l)
