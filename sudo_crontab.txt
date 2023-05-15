@@ -1,0 +1,3 @@
+@reboot /usr/bin/vpn reset
+@reboot /usr/bin/vpn connect startup
+* * * * * /usr/bin/vpn update
