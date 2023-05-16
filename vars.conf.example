@@ -1,0 +1,7 @@
+DIR="/home/me/.vpn"
+DEFAULT_FILE="AirVPN_SG-Singapore_Lacaille_TCP-443-Entry3.ovpn"
+INTERFACE="eth0"
+IFTTT_KEY=""
+IFTTT_EVENT="pc_awoken"
+IFTTT_MESSAGE="My pc got a new ip!"
+REST_DNS_URL="http://127.0.0.1:24601"
