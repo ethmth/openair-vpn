@@ -403,6 +403,8 @@ function reset() {
 	rm $DIR/.vpnips
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
+	rm $DIR/.killswitch_status
+	rm $DIR/.killswitch_ips
 }
 
 function update() {
