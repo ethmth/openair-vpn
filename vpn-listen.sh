@@ -6,7 +6,7 @@ if [[ -f "$DIR/.statusmessage" ]]; then
 	msg=$(cat "$DIR/.statusmessage")
 	echo "$msg"
 else
-	echo '{"text": "Down... VPN", "tooltip":"vpn: down","class":["disconnected"],"alt":"disconnected"}'
+	echo '{"text": "Down VPN", "tooltip":"ip: Down\ncity: Unknown","class":["disconnected"],"alt":"disconnected"}'
 fi
 
 handle_sighup() {
