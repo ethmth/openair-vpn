@@ -99,7 +99,7 @@ function _statusupdate() {
 \"file\":\"${connection_file}\",\
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
-\"text\":\"VPN\",\
+\"text\":\"${vpn_ip}${home_ip} VPN\",\
 \"tooltip\":\"ip: ${ip}${home_ip}\ncity: ${city}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
