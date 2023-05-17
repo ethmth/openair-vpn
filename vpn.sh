@@ -83,7 +83,7 @@ function _postip() {
 	LOCAL_IP=$1
 	VPN_IP=$2
 		
-	echo "Running curl -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
+	#echo "Running curl -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
 	curl -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY} 2>/dev/null
 	curl -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
 }
@@ -144,7 +144,13 @@ function _statusupdate() {
 		fi
 		_updateLocalDNS
 	fi
-	
+
+		
+	text="${ip}${home_ip}"
+	if [ "$text" == "" ]; then
+		text="Unreachable"
+		city="Unknown"
+	fi
 
 	pipe_message="{\
 \"ip\":\"${ip}\",\
@@ -154,8 +160,8 @@ function _statusupdate() {
 \"file\":\"${connection_file}\",\
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
-\"text\":\"${ip}${home_ip} VPN\",\
-\"tooltip\":\"ip: ${ip}${home_ip}\ncity: ${city}\",\
+\"text\":\"$text VPN\",\
+\"tooltip\":\"ip: $text\ncity: ${city}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
 }"
@@ -334,7 +340,6 @@ function killswitch() {
 
 function reset() {
 	rm $DIR/.vpnips
-	rm $DIR/.killswitch_status
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
 }
