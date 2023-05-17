@@ -55,7 +55,7 @@ function _statusupdate() {
 	home_ip=""
 	if [ "$airvpn_connected" -eq 0 ]; then
 		connection_file="none"
-		vpn_ip="none"
+		vpn_ip=""
 		class="disconnected"
 		home_ip="$ip"
 		ip=""
@@ -99,7 +99,7 @@ function _statusupdate() {
 \"file\":\"${connection_file}\",\
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
-\"text\":\"${vpn_ip}${home_ip} VPN\",\
+\"text\":\"${ip}${home_ip} VPN\",\
 \"tooltip\":\"ip: ${ip}${home_ip}\ncity: ${city}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
