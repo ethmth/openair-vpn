@@ -8,12 +8,12 @@ IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 REST_DNS_URL="http://127.0.0.1:24601"
 
-function _checkpipe() {
-	if ! [[ -p "$DIR/.statuspipe" ]]; then
-		mkfifo $DIR/.statuspipe
-		chmod 666 $DIR/.statuspipe
-	fi
-}
+#function _checkpipe() {
+#	if ! [[ -p "$DIR/.statuspipe" ]]; then
+#		mkfifo $DIR/.statuspipe
+#		chmod 666 $DIR/.statuspipe
+#	fi
+#}
 
 function _checkroot() {
 	if [[ $EUID -ne 0 ]]; then
@@ -33,7 +33,7 @@ function _postip() {
 }
 
 function _statusupdate() {
-	_checkpipe
+#	_checkpipe
 
 	ipinfo=$(cat "$DIR/.ipinfo")
 	while IFS= read -r line; do
@@ -105,13 +105,14 @@ function _statusupdate() {
 \"alt\":\"${class}\"\
 }"
 
-	exec 3<> "$DIR/.statuspipe"
-	echo "$pipe_message" >&3
+	#exec 3<> "$DIR/.statuspipe"
+	#echo "$pipe_message" >&3
 	echo "$pipe_message" > $DIR/.statusmessage
 	if ! [[ $EUID -ne 0 ]]; then
 		chmod 666 $DIR/.statusmessage
 	fi
-	exec 3>&-
+	#exec 3>&-
+	killall -1 vpn-listen
 
 	echo "Public IP: ${ip}${home_ip}, VPN IP: ${vpn_ip}, City: ${city}, Type: ${typ}"
 	_postip "${local_ip}" "${ip}"
@@ -240,27 +241,27 @@ function disconnect() {
 }
 
 function reset() {
-	rm $DIR/.statuspipe
+	#rm $DIR/.statuspipe
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
 }
 
-function statuslisten() {
-	_checkpipe
-
-	if [[ -f "$DIR/.statusmessage" ]]; then
-		msg=$(cat "$DIR/.statusmessage")
-		echo "$msg"
-	else
-		echo '{"text":"VPN","tooltip":"vpn: down","class":["disconnected"],"alt":"disconnected"}'
-	fi
-	
-	while true; do
-		while read -r line; do
-			echo "$line"
-		done < "$DIR/.statuspipe"
-	done
-}
+#function statuslisten() {
+#	_checkpipe
+#
+#	if [[ -f "$DIR/.statusmessage" ]]; then
+#		msg=$(cat "$DIR/.statusmessage")
+#		echo "$msg"
+#	else
+#		echo '{"text":"VPN","tooltip":"vpn: down","class":["disconnected"],"alt":"disconnected"}'
+#	fi
+#	
+#	while true; do
+#		while read -r line; do
+#			echo "$line"
+#		done < "$DIR/.statuspipe"
+#	done
+#}
 
 function update() {
 	_updateipinfo	
@@ -276,8 +277,8 @@ elif [ "$1" == "disconnect" ]; then
 	disconnect ${@:2:$#-1}
 elif [ "$1" == "reset" ]; then
 	reset ${@:2:$#-1}
-elif [ "$1" == "statuslisten" ]; then
-	statuslisten ${@:2:$#-1}
+#elif [ "$1" == "statuslisten" ]; then
+#	statuslisten ${@:2:$#-1}
 elif [ "$1" == "update" ]; then
 	update ${@:2:$#-1}
 else 
@@ -286,7 +287,7 @@ else
 	printf	"\t connect <new|default>\n"
 	printf	"\t disconnect\n"
 	printf	"\t reset\n"
-	printf	"\t statuslisten\n"
+#	printf	"\t statuslisten\n"
 	printf	"\t update\n"
 	exit 0
 fi

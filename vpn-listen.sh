@@ -3,7 +3,7 @@
 DIR="/home/me/.vpn"
 
 handle_sighup() {
-	echo "SIGHUP signal received"
+	echo $(cat "$DIR/.statusmessage")
 }
 
 trap 'handle_sighup' SIGHUP
