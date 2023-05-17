@@ -120,7 +120,6 @@ function _updateip() {
     		fi
 		done <<< "$ipinfo"
 	fi
-
 	ip_old=""
 	typ_old=""
 	city_old=""
@@ -224,10 +223,10 @@ function _updatestatus() {
 		ks_status=$(cat "$DIR/.killswitch_status")
 	fi
 		
-	text="ks:${ks_status} ${ip}${home_ip}"
+	text="${ip}${home_ip}"
 	if [ "$text" == "" ]; then
-		text="ks:${ks_status} Unreachable"
-		city="ks:${ks_status} Unknown"
+		text="Unreachable"
+		city="Unknown"
 	fi
 
 	pipe_message="{\
@@ -238,7 +237,8 @@ function _updatestatus() {
 \"file\":\"${connection_file}\",\
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
-\"text\":\"$text VPN\",\
+\"text\":\"$ks_status $text VPN\",\
+\"messages\": [{\"label\": {\"text\":\"$ks_status $text VPN ${class}\",\"color\":\"#34d8eb\"},\"progress\":{\"value\":0.63}}],\
 \"tooltip\":\"ip: $text\ncity: ${city}\nkillswitch: ${ks_status}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
@@ -372,7 +372,8 @@ function killswitch() {
 			chmod 666 $DIR/.killswitch_status
 		fi
 
-		_updatestatus
+		sleep 1
+		_updateeverything
 	elif [ "$1" == "off" ]; then
 		ks_status=""	
 		if [[ -f "$DIR/.killswitch_status" ]]; then
@@ -389,8 +390,9 @@ function killswitch() {
 		if ! [[ $EUID -ne 0 ]]; then
 			chmod 666 $DIR/.killswitch_status
 		fi
-		
-		_updatestatus
+
+		sleep 1		
+		_updateeverything
 	else
 		echo "Usage: vpn killswitch <on|off>"
 		exit 1
