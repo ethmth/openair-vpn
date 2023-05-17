@@ -1,18 +1,22 @@
 #!/bin/bash
 
 LOCATIONS_FILE="vars/install_location.conf"
-SCRIPT_NAME="vpn"
 
 while IFS= read -r line; do
 	if grep -q "home" <<< "$line"; then
-        echo "Copying $SCRIPT_NAME to $line$SCRIPT_NAME"
-		cp $SCRIPT_NAME $line$SCRIPT_NAME
-		chmod +x $line$SCRIPT_NAME
+        echo "Copying vpn and vpn-listen to ${line}"
+		cp vpn ${line}vpn
+		chmod +x ${line}vpn
+		cp vpn-listen ${line}vpn-listen
+		chmod +x ${line}vpn-listen
     else
-        echo "Copying $SCRIPT_NAME to $line$SCRIPT_NAME as root"
-		sudo -k cp $SCRIPT_NAME $line$SCRIPT_NAME
-		sudo chmod +x $line$SCRIPT_NAME
+        echo "Copying vpn and vpn-listen to $line as root"
+		sudo -k cp vpn ${line}vpn
+		sudo chmod +x ${line}vpn
+		sudo cp vpn-listen ${line}vpn-listen
+		sudo chmod +x ${line}vpn-listen
     fi
 done < "$LOCATIONS_FILE"
 
-rm $SCRIPT_NAME
+rm vpn
+rm vpn-listen
