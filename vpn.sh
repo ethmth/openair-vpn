@@ -88,12 +88,194 @@ function _postip() {
 	curl -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
 }
 
-function _statusupdate() {
+function _postLocalDNS() {
+	dns_local_ip=$(cat "$DIR/.last_localip")
+
+	# TODO - Update Local DNS if Needed
+}
+
+function _postVPNDNS() {
+	dns_ip=$(cat "$DIR/.last_vpnip")
+
+	# TODO - Update VPN DNS if Needed
+}
+
+
+
+#function _updateipinfo() {
+function _updateeverythingold() {
+
+	#updateIP=0
+
+	ipinfo=$(curl https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	curl_exit_status=$?
+	if [ $curl_exit_status -eq 0 ]; then
+		while IFS= read -r line; do
+    		if [ -z "$ip" ]; then
+        		ip="$line"
+    		elif [ -z "$typ" ]; then
+        		typ="$line"
+    		elif [ -z "$city" ]; then
+        		city="$line"
+    		fi
+		done <<< "$ipinfo"
+	fi
+
+	ip_old=""
+	typ_old=""
+	city_old=""
+	if [[ -e "$DIR/.ipinfo" ]]; then
+		ipinfo_old=$(cat "$DIR/.ipinfo")
+		while IFS= read -r line; do
+    		if [ -z "$ip_old" ]; then
+        		ip_old="$line"
+    		elif [ -z "$typ_old" ]; then
+        		typ_old="$line"
+    		elif [ -z "$city_old" ]; then
+        		city_old="$line"
+    		fi
+		done <<< "$ipinfo_old"
+	fi
+
+	printf "$ipinfo" > $DIR/.ipinfo
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.ipinfo	
+	fi
+
+	if ! [ "$ip" == "$ip_old" ]; then
+		#updateIP=1	
+		_updateip
+	fi
+
+	_updatestatus
+
+
+	
+	#curl_exit_status=$?
+	#if [ $curl_exit_status -eq 0 ]; then
+	#	oldinfo=""
+	#	if [[ -e "$DIR/.ipinfo" ]]; then
+	#		oldinfo=$(cat "$DIR/.ipinfo")
+	#	fi
+	#	if ! [ "$ipinfo" == "$oldinfo" ]; then
+	#		printf "$ipinfo" > $DIR/.ipinfo
+	#		if ! [[ $EUID -ne 0 ]]; then
+	#			chmod 666 $DIR/.ipinfo	
+	#		fi
+	#		_updateip
+	#	fi
+	#fi
+	#_updatestatus
+}
+
+function _updateeverything() {
+
+	#cp $DIR/.ipinfo $DIR/.ipinfoold
+	#if ! [[ $EUID -ne 0 ]]; then
+	#	chmod 666 $DIR/.ipinfo	
+	#	chmod 666 $DIR/.ipinfoold	
+	#fi
+	
+	#ipinfo=$(curl https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	
+	#printf "$ipinfo" > $DIR/.ipinfo
+	#if ! [[ $EUID -ne 0 ]]; then
+	#	chmod 666 $DIR/.ipinfo	
+	#fi
+
+	_updateip
+
+	_updatestatus
+	
+}
+
+function _updateip() {
+	
+	ipinfo=$(curl https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	curl_exit_status=$?
+	if [ $curl_exit_status -eq 0 ]; then
+		while IFS= read -r line; do
+    		if [ -z "$ip" ]; then
+        		ip="$line"
+    		elif [ -z "$typ" ]; then
+        		typ="$line"
+    		elif [ -z "$city" ]; then
+        		city="$line"
+    		fi
+		done <<< "$ipinfo"
+	fi
+
+	ip_old=""
+	typ_old=""
+	city_old=""
+	if [[ -e "$DIR/.ipinfo" ]]; then
+		ipinfo_old=$(cat "$DIR/.ipinfo")
+		while IFS= read -r line; do
+    		if [ -z "$ip_old" ]; then
+        		ip_old="$line"
+    		elif [ -z "$typ_old" ]; then
+        		typ_old="$line"
+    		elif [ -z "$city_old" ]; then
+        		city_old="$line"
+    		fi
+		done <<< "$ipinfo_old"
+	fi
+
+	printf "$ipinfo" > $DIR/.ipinfo
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.ipinfo	
+	fi
+
+	if ! [ "$ip" == "$ip_old" ]; then
+		#_postIP
+		airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
+	
+		local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+		local_inet=($local_inet)
+		local_ip=${local_inet[1]}
+		local_ip=${local_ip%/*}
+	
+		if [ "$airvpn_connected" -eq 0 ]; then
+			ip=""
+		else
+			old_ip=""
+			if [[ -e "$DIR/.last_vpnip" ]]; then
+				old_ip=$(cat "$DIR/.last_vpnip")
+			fi
+			if ! [ "$ip" == "$old_ip" ]; then
+				echo "$ip" > $DIR/.last_vpnip
+				if ! [[ $EUID -ne 0 ]]; then
+					chmod 666 $DIR/.last_vpnip
+				fi
+				_postVPNDNS
+			fi
+		fi
+
+
+		old_local_ip=""
+		if [[ -e "$DIR/.last_localip" ]]; then
+			old_local_ip=$(cat "$DIR/.last_localip")
+		fi
+		if ! [ "$old_local_ip" == "$local_ip" ]; then
+			echo "$local_ip" > $DIR/.last_localip
+			if ! [[ $EUID -ne 0 ]]; then
+				chmod 666 $DIR/.last_localip
+			fi
+			_postLocalDNS
+		fi
+		
+		_postip "${local_ip}" "${ip}"
+	fi
+
+	
+}
+
+function _updatestatus() {
 
 	ipinfo=$(cat "$DIR/.ipinfo")
 	while IFS= read -r line; do
     	if [ -z "$ip" ]; then
-        	ip="$line"
+       		ip="$line"
     	elif [ -z "$typ" ]; then
         	typ="$line"
     	elif [ -z "$city" ]; then
@@ -105,6 +287,11 @@ function _statusupdate() {
 	vpn_ip=$(cat "$DIR/$connection_file" | grep remote | head -n 1 | awk '{print $2}')
 
 	airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
+	
+	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	local_inet=($local_inet)
+	local_ip=${local_inet[1]}
+	local_ip=${local_ip%/*}
 
 	class="connected"
 	home_ip=""
@@ -114,42 +301,42 @@ function _statusupdate() {
 		class="disconnected"
 		home_ip="$ip"
 		ip=""
-	else
-		old_ip=""
-		if [[ -e "$DIR/.last_vpnip" ]]; then
-			old_ip=$(cat "$DIR/.last_vpnip")
-		fi
-		if ! [ "$ip" == "$old_ip" ]; then
-			echo "$ip" > $DIR/.last_vpnip
-			if ! [[ $EUID -ne 0 ]]; then
-				chmod 666 $DIR/.last_vpnip
-			fi
-			_updateVPNDNS
-		fi
+	#else
+		#old_ip=""
+		#if [[ -e "$DIR/.last_vpnip" ]]; then
+		#	old_ip=$(cat "$DIR/.last_vpnip")
+		#fi
+		#if ! [ "$ip" == "$old_ip" ]; then
+		#	echo "$ip" > $DIR/.last_vpnip
+		#	if ! [[ $EUID -ne 0 ]]; then
+		#		chmod 666 $DIR/.last_vpnip
+		#	fi
+		#	_postVPNDNS
+		#	_postip "${local_ip}" "${ip}"
+		#fi
 	fi
 
-	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
-	local_inet=($local_inet)
-	local_ip=${local_inet[1]}
-	local_ip=${local_ip%/*}
+	#old_local_ip=""
+	#if [[ -e "$DIR/.last_localip" ]]; then
+	#	old_local_ip=$(cat "$DIR/.last_localip")
+	#fi
+	#if ! [ "$old_local_ip" == "$local_ip" ]; then
+	#	echo "$local_ip" > $DIR/.last_localip
+	#	if ! [[ $EUID -ne 0 ]]; then
+	#		chmod 666 $DIR/.last_localip
+	#	fi
+	#	_postLocalDNS
+	#fi
 
-	old_local_ip=""
-	if [[ -e "$DIR/.last_localip" ]]; then
-		old_local_ip=$(cat "$DIR/.last_localip")
+	ks_status=""	
+	if [[ -f "$DIR/.killswitch_status" ]]; then
+		ks_status=$(cat "$DIR/.killswitch_status")
 	fi
-	if ! [ "$old_local_ip" == "$local_ip" ]; then
-		echo "$local_ip" > $DIR/.last_localip
-		if ! [[ $EUID -ne 0 ]]; then
-			chmod 666 $DIR/.last_localip
-		fi
-		_updateLocalDNS
-	fi
-
 		
-	text="${ip}${home_ip}"
+	text="ks:${ks_status} ${ip}${home_ip}"
 	if [ "$text" == "" ]; then
-		text="Unreachable"
-		city="Unknown"
+		text="ks:${ks_status} Unreachable"
+		city="ks:${ks_status} Unknown"
 	fi
 
 	pipe_message="{\
@@ -161,50 +348,33 @@ function _statusupdate() {
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
 \"text\":\"$text VPN\",\
-\"tooltip\":\"ip: $text\ncity: ${city}\",\
+\"tooltip\":\"ip: $text\ncity: ${city}\nkillswitch: ${ks_status}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
 }"
 
-	echo "$pipe_message" > $DIR/.statusmessage
-	if ! [[ $EUID -ne 0 ]]; then
-		chmod 666 $DIR/.statusmessage
+	old_pipe_message=""
+	if [[ -f "$DIR/.statusmessage" ]]; then
+		old_pipe_message=$(cat "$DIR/.statusmessage")
 	fi
-	killall -1 vpn-listen
+
+	if ! [ "$pipe_message" == "$old_pipe_message" ]; then
+		echo "$pipe_message" > $DIR/.statusmessage
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR/.statusmessage
+		fi
+		killall -1 vpn-listen
+	fi
+
+
 
 	echo "Public IP: ${ip}${home_ip}, VPN IP: ${vpn_ip}, City: ${city}, Type: ${typ}"
-	_postip "${local_ip}" "${ip}"
+	#_postip "${local_ip}" "${ip}"
 }
 
-function _updateipinfo() {
-	ipinfo=$(curl https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
-	curl_exit_status=$?
-	if [ $curl_exit_status -eq 0 ]; then
-		oldinfo=""
-		if [[ -e "$DIR/.ipinfo" ]]; then
-			oldinfo=$(cat "$DIR/.ipinfo")
-		fi
-		if ! [ "$ipinfo" == "$oldinfo" ]; then
-			printf "$ipinfo" > $DIR/.ipinfo
-			if ! [[ $EUID -ne 0 ]]; then
-				chmod 666 $DIR/.ipinfo	
-			fi
-			_statusupdate
-		fi
-	fi
-}
 
-function _updateVPNDNS() {
-	dns_ip=$(cat "$DIR/.last_vpnip")
 
-	# TODO - Update VPN DNS if Needed
-}
 
-function _updateLocalDNS() {
-	dns_local_ip=$(cat "$DIR/.last_localip")
-
-	# TODO - Update Local DNS if Needed
-}
 
 
 function check() {
@@ -279,7 +449,7 @@ function connect() {
 	else
 		sleep 5
 	fi
-	_updateipinfo
+	_updateeverything
 }
 
 function disconnect() {
@@ -289,7 +459,7 @@ function disconnect() {
 	if ! [ $openvpn_on -eq 0 ]; then
 		killall openvpn
 		sleep 5
-		_updateipinfo
+		_updateeverything
 	fi
 
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
@@ -316,6 +486,8 @@ function killswitch() {
 		if ! [[ $EUID -ne 0 ]]; then
 			chmod 666 $DIR/.killswitch_status
 		fi
+
+		_updatestatus
 	elif [ "$1" == "off" ]; then
 		ks_status=""	
 		if [[ -f "$DIR/.killswitch_status" ]]; then
@@ -332,6 +504,8 @@ function killswitch() {
 		if ! [[ $EUID -ne 0 ]]; then
 			chmod 666 $DIR/.killswitch_status
 		fi
+		
+		_updatestatus
 	else
 		echo "Usage: vpn killswitch <on|off>"
 		exit 1
@@ -345,7 +519,7 @@ function reset() {
 }
 
 function update() {
-	_updateipinfo	
+	_updateeverything	
 }
 
 if [ "$1" == "check" ]; then
