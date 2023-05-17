@@ -15,6 +15,69 @@ function _checkroot() {
 	fi
 }
 
+function _extractIPs() {
+	cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' > $DIR/.vpnips
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.vpnips
+	fi
+}
+
+function _killswitchOff() {
+
+	all_vpn_ips=""	
+	if [[ -f "$DIR/.killswitch_ips" ]]; then
+		all_vpn_ips=$(cat "$DIR/.killswitch_ips")
+	fi
+	if [ "$all_vpn_ips" == "" ]; then
+		echo "Can't find killswitch_ips. Exiting without changing iptables"
+		exit 1
+	fi
+
+	iptables -P OUTPUT ACCEPT
+	iptables -D OUTPUT -o tun+ -j ACCEPT
+	iptables -D INPUT -i lo -j ACCEPT
+	iptables -D OUTPUT -o lo -j ACCEPT
+	iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
+	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
+	iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+	iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+	ip6tables -P OUTPUT ACCEPT
+	ip6tables -D OUTPUT -o tun+ -j ACCEPT
+}
+
+function _killswitchOn() {
+	_extractIPs
+	all_vpn_ips=""
+	while IFS= read -r line; do
+		if ! [ "$all_vpn_ips" == "" ]; then
+			all_vpn_ips+=","
+		fi 
+		all_vpn_ips+="$line/24"
+	done < "$DIR/.vpnips"
+
+	if [ "$all_vpn_ips" == "" ]; then
+		echo "No vpn ips found"
+		exit 1
+	fi
+
+	iptables -P OUTPUT DROP
+	iptables -A OUTPUT -o tun+ -j ACCEPT
+	iptables -A INPUT -i lo -j ACCEPT
+	iptables -A OUTPUT -o lo -j ACCEPT
+	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
+	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
+	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+	iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+	ip6tables -P OUTPUT DROP
+	ip6tables -A OUTPUT -o tun+ -j ACCEPT
+	
+	echo "$all_vpn_ips" > $DIR/.killswitch_ips
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.killswitch_ips
+	fi
+}
+
+
 function _postip() {
 	
 	LOCAL_IP=$1
@@ -229,7 +292,49 @@ function disconnect() {
 	fi
 }
 
+function killswitch() {
+	_checkroot
+
+	if [ "$1" == "on" ]; then
+		ks_status=""	
+		if [[ -f "$DIR/.killswitch_status" ]]; then
+			ks_status=$(cat "$DIR/.killswitch_status")
+		fi
+		if [ "$ks_status" == "on" ]; then
+			_killswitchOff
+		fi
+
+		_killswitchOn
+		
+		echo "on" > $DIR/.killswitch_status
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR/.killswitch_status
+		fi
+	elif [ "$1" == "off" ]; then
+		ks_status=""	
+		if [[ -f "$DIR/.killswitch_status" ]]; then
+			ks_status=$(cat "$DIR/.killswitch_status")
+		fi
+		if [ "$ks_status" == "off" ]; then
+			echo "Killswitch already off"
+			exit 0
+		fi
+
+		_killswitchOff
+
+		echo "off" > $DIR/.killswitch_status
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR/.killswitch_status
+		fi
+	else
+		echo "Usage: vpn killswitch <on|off>"
+		exit 1
+	fi	
+}
+
 function reset() {
+	rm $DIR/.vpnips
+	rm $DIR/.killswitch_status
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
 }
@@ -240,10 +345,12 @@ function update() {
 
 if [ "$1" == "check" ]; then
 	check ${@:2:$#-1}
-elif [ "$1" == "connect" ]; then
+elif ([ "$1" == "connect" ] || [ "$1" == "on" ]); then
 	connect ${@:2:$#-1}
-elif [ "$1" == "disconnect" ]; then
+elif ([ "$1" == "disconnect" ] || [ "$1" == "off" ]); then
 	disconnect ${@:2:$#-1}
+elif ([ "$1" == "killswitch" ] || [ "$1" == "ks" ]); then
+	killswitch ${@:2:$#-1}
 elif [ "$1" == "reset" ]; then
 	reset ${@:2:$#-1}
 elif [ "$1" == "update" ]; then
@@ -253,6 +360,7 @@ else
 	printf	"\t check\n"
 	printf	"\t connect <new|default>\n"
 	printf	"\t disconnect\n"
+	printf	"\t killswitch <on|off>\n"
 	printf	"\t reset\n"
 	printf	"\t update\n"
 	exit 0
