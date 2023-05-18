@@ -256,7 +256,7 @@ function _updatestatus() {
 		if ! [[ $EUID -ne 0 ]]; then
 			chmod 666 $DIR/.statusmessage
 		fi
-		killall -1 vpn-listen
+		killall -1 vpn-listen 2>/dev/null
 	fi
 
 
