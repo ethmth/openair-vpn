@@ -21,7 +21,6 @@ else
 \"alt\":\"Unknown\"\
 }"
 	echo "$message"
-	#echo '{"text": "Down VPN", "tooltip":"ip: Down\ncity: Unknown","class":["disconnected"],"alt":"disconnected"}'
 fi
 
 handle_sighup() {

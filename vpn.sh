@@ -209,7 +209,7 @@ function _updatestatus() {
 	local_ip=${local_ip%/*}
 
 	class="connected"
-	color="#000000"
+	color="#ffffff"
 	home_ip=""
 	if [ "$airvpn_connected" -eq 0 ]; then
 		connection_file="none"
