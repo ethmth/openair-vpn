@@ -3,7 +3,7 @@
 from flask import Flask
 from flask import request
 
-PORT=5000
+PORT=42145
 DIR="/home/me/.vpn"
 
 app = Flask(__name__)
@@ -23,7 +23,7 @@ def home():
 \"type\":\"Unknown\",\
 \"city\":\"Unknown\",\
 \"text\":\"Status Error VPN\",\
-\"messages\": [{\"label\": {\"text\":\"Status Error VPN\",\"color\":\"#ff0000\"},\"progress\":{\"value\":0}}],\
+\"messages\": [{\"label\": {\"text\":\"VPN Status Read Error\",\"color\":\"#ff0000\"},\"progress\":{\"value\":0}}],\
 \"tooltip\":\"ip: Unknown\\ncity: Unknown\\nkillswitch: Unknown\",\
 \"class\":[\"Unknown\"],\
 \"alt\":\"Unknown\"\
@@ -31,4 +31,4 @@ def home():
 	return message
 
 if __name__ == "__main__":
-    app.run(port=5000, host="127.0.0.1")
+    app.run(port=PORT, host="127.0.0.1")

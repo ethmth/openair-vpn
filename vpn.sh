@@ -209,11 +209,13 @@ function _updatestatus() {
 	local_ip=${local_ip%/*}
 
 	class="connected"
+	color="#000000"
 	home_ip=""
 	if [ "$airvpn_connected" -eq 0 ]; then
 		connection_file="none"
 		vpn_ip=""
 		class="disconnected"
+		color="#ff0000"
 		home_ip="$ip"
 		ip=""
 	fi
@@ -238,7 +240,7 @@ function _updatestatus() {
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
 \"text\":\"$ks_status $text VPN\",\
-\"messages\": [{\"label\": {\"text\":\"$ks_status $text VPN ${class}\",\"color\":\"#34d8eb\"},\"progress\":{\"value\":0.63}}],\
+\"messages\": [{\"label\": {\"text\":\"VPN ${class} - ks $ks_status - $text\",\"color\":\"${color}\"},\"progress\":{\"value\":0}}],\
 \"tooltip\":\"ip: $text\ncity: ${city}\nkillswitch: ${ks_status}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
