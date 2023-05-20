@@ -224,6 +224,11 @@ function _updatestatus() {
 	if [[ -f "$DIR/.killswitch_status" ]]; then
 		ks_status=$(cat "$DIR/.killswitch_status")
 	fi
+	
+	lan_status=""	
+	if [[ -f "$DIR/.lan_status" ]]; then
+		lan_status=$(cat "$DIR/.lan_status")
+	fi
 		
 	text="${ip}${home_ip}"
 	if [ "$text" == "" ]; then
@@ -239,8 +244,8 @@ function _updatestatus() {
 \"file\":\"${connection_file}\",\
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
-\"text\":\"$ks_status $text VPN\",\
-\"messages\": [{\"label\": {\"text\":\"VPN ${class} - ks $ks_status - $text\",\"color\":\"${color}\"},\"progress\":{\"value\":0}}],\
+\"text\":\"KS $ks_status LAN $lan_status $text VPN\",\
+\"messages\": [{\"label\": {\"text\":\"VPN ${class} - KS $ks_status - LAN $lan_status - $text\",\"color\":\"${color}\"},\"progress\":{\"value\":0}}],\
 \"tooltip\":\"ip: $text\ncity: ${city}\nkillswitch: ${ks_status}\",\
 \"class\":[\"${class}\"],\
 \"alt\":\"${class}\"\
@@ -401,6 +406,49 @@ function killswitch() {
 	fi	
 }
 
+function lan() {
+	_checkroot
+	
+	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	local_inet=($local_inet)
+	local_ip=${local_inet[1]}
+	local_extension="${local_ip##*/}"
+	local_ip=${local_ip%/*}
+	local_subnet="${local_ip%.*}"
+	local_subnet="${local_subnet}.0/$local_extension"
+
+	if [ "$1" == "on" ]; then
+		lan_status=""	
+		if [[ -f "$DIR/.lan_status" ]]; then
+			lan_status=$(cat "$DIR/.lan_status")
+		fi
+		if [ "$lan_status" == "on" ]; then
+			iptables -D OUTPUT -d $local_subnet -j ACCEPT
+			iptables -D INPUT -s $local_subnet -j ACCEPT
+		fi
+
+		iptables -A OUTPUT -d $local_subnet -j ACCEPT
+		iptables -A INPUT -s $local_subnet -j ACCEPT
+		
+		echo "on" > $DIR/.lan_status
+	else 
+		lan_status=""	
+		if [[ -f "$DIR/.lan_status" ]]; then
+			lan_status=$(cat "$DIR/.lan_status")
+		fi
+		if [ "$lan_status" == "off" ]; then
+			echo "LAN Already Off"
+			exit 1
+		fi
+
+		iptables -D OUTPUT -d $local_subnet -j ACCEPT
+		iptables -D INPUT -s $local_subnet -j ACCEPT
+		
+		echo "off" > $DIR/.lan_status
+	fi
+
+}
+
 function reset() {
 	rm $DIR/.vpnips
 	rm $DIR/.statusmessage
@@ -421,6 +469,8 @@ elif ([ "$1" == "disconnect" ] || [ "$1" == "off" ]); then
 	disconnect ${@:2:$#-1}
 elif ([ "$1" == "killswitch" ] || [ "$1" == "ks" ]); then
 	killswitch ${@:2:$#-1}
+elif [ "$1" == "lan" ]; then
+	lan ${@:2:$#-1}
 elif [ "$1" == "reset" ]; then
 	reset ${@:2:$#-1}
 elif [ "$1" == "update" ]; then
@@ -431,6 +481,7 @@ else
 	printf	"\t connect <new|default>\n"
 	printf	"\t disconnect\n"
 	printf	"\t killswitch <on|off>\n"
+	printf	"\t lan\n"
 	printf	"\t reset\n"
 	printf	"\t update\n"
 	exit 0
