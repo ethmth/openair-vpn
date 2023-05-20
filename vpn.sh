@@ -407,6 +407,11 @@ function killswitch() {
 }
 
 function lan() {
+
+	if [ "$2" == "startup" ]; then
+		sleep 20
+	fi
+
 	_checkroot
 	
 	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
@@ -416,6 +421,7 @@ function lan() {
 	local_ip=${local_ip%/*}
 	local_subnet="${local_ip%.*}"
 	local_subnet="${local_subnet}.0/$local_extension"
+	local_dns="${local_ip%.*}.1"
 
 	if [ "$1" == "on" ]; then
 		lan_status=""	
@@ -425,10 +431,14 @@ function lan() {
 		if [ "$lan_status" == "on" ]; then
 			iptables -D OUTPUT -d $local_subnet -j ACCEPT
 			iptables -D INPUT -s $local_subnet -j ACCEPT
+			iptables -D OUTPUT -d $local_dns -j DROP
+			iptables -D INPUT -s $local_dns -j DROP
 		fi
 
 		iptables -A OUTPUT -d $local_subnet -j ACCEPT
 		iptables -A INPUT -s $local_subnet -j ACCEPT
+		iptables -A OUTPUT -d $local_dns -j DROP
+		iptables -A INPUT -s $local_dns -j DROP
 		
 		echo "on" > $DIR/.lan_status
 	else 
@@ -443,9 +453,12 @@ function lan() {
 
 		iptables -D OUTPUT -d $local_subnet -j ACCEPT
 		iptables -D INPUT -s $local_subnet -j ACCEPT
+		iptables -D OUTPUT -d $local_dns -j DROP
+		iptables -D INPUT -s $local_dns -j DROP
 		
 		echo "off" > $DIR/.lan_status
 	fi
+	_updatestatus
 
 }
 
@@ -455,6 +468,7 @@ function reset() {
 	rm $DIR/.ipinfo
 	rm $DIR/.killswitch_status
 	rm $DIR/.killswitch_ips
+	rm $DIR/.lan_status
 }
 
 function update() {
