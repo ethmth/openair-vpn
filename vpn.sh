@@ -83,9 +83,9 @@ function _postip() {
 	LOCAL_IP=$1
 	VPN_IP=$2
 		
-	#echo "Running curl -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
-	curl -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY} 2>/dev/null
-	curl -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
+	#echo "Running curl --connect-timeout 5 -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
+	curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY} 2>/dev/null
+	curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
 }
 
 function _postLocalDNS() {
@@ -107,7 +107,7 @@ function _updateeverything() {
 
 function _updateip() {
 	
-	ipinfo=$(curl https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	ipinfo=$(curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
 	curl_exit_status=$?
 	if [ $curl_exit_status -eq 0 ]; then
 		while IFS= read -r line; do
@@ -270,7 +270,7 @@ function _updatestatus() {
 }
 
 function check() {
-	curl https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name'
+	curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name'
 }
 
 function connect() {
@@ -429,16 +429,24 @@ function lan() {
 			lan_status=$(cat "$DIR/.lan_status")
 		fi
 		if [ "$lan_status" == "on" ]; then
-			iptables -D OUTPUT -d $local_subnet -j ACCEPT
-			iptables -D INPUT -s $local_subnet -j ACCEPT
-			iptables -D OUTPUT -d $local_dns -j DROP
-			iptables -D INPUT -s $local_dns -j DROP
+			#iptables -D OUTPUT -d $local_subnet -j ACCEPT
+			#iptables -D INPUT -s $local_subnet -j ACCEPT
+			#iptables -D OUTPUT -d $local_dns -j DROP
+			#iptables -D INPUT -s $local_dns -j DROP
+			#iptables -D OUTPUT -d $local_subnet -p udp,tcp --dport 53 -j DROP
+			#iptables -D INPUT -s $local_subnet -p udp,tcp --dport 53 -j DROP
+			echo "LAN Already On"
+			exit 1
 		fi
+		iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
+		iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+		iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
+		iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 
 		iptables -A OUTPUT -d $local_subnet -j ACCEPT
 		iptables -A INPUT -s $local_subnet -j ACCEPT
-		iptables -A OUTPUT -d $local_dns -j DROP
-		iptables -A INPUT -s $local_dns -j DROP
+		#iptables -A OUTPUT -d $local_dns -j DROP
+		#iptables -A INPUT -s $local_dns -j DROP
 		
 		echo "on" > $DIR/.lan_status
 	else 
@@ -450,11 +458,15 @@ function lan() {
 			echo "LAN Already Off"
 			exit 1
 		fi
+		iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
+		iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+		iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP
+		iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 
 		iptables -D OUTPUT -d $local_subnet -j ACCEPT
 		iptables -D INPUT -s $local_subnet -j ACCEPT
-		iptables -D OUTPUT -d $local_dns -j DROP
-		iptables -D INPUT -s $local_dns -j DROP
+		#iptables -D OUTPUT -d $local_dns -j DROP
+		#iptables -D INPUT -s $local_dns -j DROP
 		
 		echo "off" > $DIR/.lan_status
 	fi
