@@ -41,11 +41,19 @@ function _killswitchOff() {
 	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
 	iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
 	iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+	#iptables -D OUTPUT -d 192.168.240.1/24 -p tcp --dport 5555 -j ALLOW
+	#iptables -D INPUT -s 192.168.240.1/24 -p tcp --dport 5555 -j ALLOW
+	#iptables -D OUTPUT -d 192.168.240.1/24 -p udp --dport 5555 -j ALLOW
+	#iptables -D INPUT -s 192.168.240.1/24 -p udp --dport 5555 -j ALLOW
 
 	ip6tables -P OUTPUT ACCEPT
 	ip6tables -D INPUT -i lo -j ACCEPT
 	ip6tables -D OUTPUT -o lo -j ACCEPT
 	ip6tables -D OUTPUT -o tun+ -j ACCEPT
+	#ip6tables -D OUTPUT -d fe80::216:3eff:fe00:1/64 -p tcp --dport 5555 -j ALLOW
+	#ip6tables -D INPUT -s fe80::216:3eff:fe00:1/64 -p tcp --dport 5555 -j ALLOW
+	#ip6tables -D OUTPUT -d fe80::216:3eff:fe00:1/64 -p udp --dport 5555 -j ALLOW
+	#ip6tables -D INPUT -s fe80::216:3eff:fe00:1/64 -p udp --dport 5555 -j ALLOW
 }	
 
 function _killswitchOn() {
@@ -71,11 +79,19 @@ function _killswitchOn() {
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+	#iptables -A OUTPUT -d 192.168.240.1/24 -p tcp --dport 5555 -j ALLOW
+	#iptables -A INPUT -s 192.168.240.1/24 -p tcp --dport 5555 -j ALLOW
+	#iptables -A OUTPUT -d 192.168.240.1/24 -p udp --dport 5555 -j ALLOW
+	#iptables -A INPUT -s 192.168.240.1/24 -p udp --dport 5555 -j ALLOW
 	
 	ip6tables -P OUTPUT DROP
 	ip6tables -A INPUT -i lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
+	#ip6tables -A OUTPUT -d fe80::216:3eff:fe00:1/64 -p tcp --dport 5555 -j ALLOW
+	#ip6tables -A INPUT -s fe80::216:3eff:fe00:1/64 -p tcp --dport 5555 -j ALLOW
+	#ip6tables -A OUTPUT -d fe80::216:3eff:fe00:1/64 -p udp --dport 5555 -j ALLOW
+	#ip6tables -A INPUT -s fe80::216:3eff:fe00:1/64 -p udp --dport 5555 -j ALLOW
 	
 	echo "$all_vpn_ips" > $DIR/.killswitch_ips
 	if ! [[ $EUID -ne 0 ]]; then
@@ -456,7 +472,7 @@ function killswitch() {
 function lan() {
 
 	if [ "$2" == "startup" ]; then
-		sleep 20
+		sleep 2
 	fi
 
 	_checkroot
