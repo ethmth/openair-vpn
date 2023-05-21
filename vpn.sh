@@ -32,7 +32,7 @@ function _killswitchOff() {
 		echo "Can't find killswitch_ips. Exiting without changing iptables"
 		exit 1
 	fi
-
+	
 	iptables -P OUTPUT ACCEPT
 	iptables -D OUTPUT -o tun+ -j ACCEPT
 	iptables -D INPUT -i lo -j ACCEPT
@@ -41,7 +41,10 @@ function _killswitchOff() {
 	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
 	iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
 	iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+
 	ip6tables -P OUTPUT ACCEPT
+	ip6tables -D INPUT -i lo -j ACCEPT
+	ip6tables -D OUTPUT -o lo -j ACCEPT
 	ip6tables -D OUTPUT -o tun+ -j ACCEPT
 }	
 
@@ -59,14 +62,6 @@ function _killswitchOn() {
 		echo "No vpn ips found"
 		exit 1
 	fi
-	
-	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
-	local_inet=($local_inet)
-	local_ip=${local_inet[1]}
-	local_extension="${local_ip##*/}"
-	local_ip=${local_ip%/*}
-	local_subnet="${local_ip%.*}"
-	local_subnet="${local_subnet}.0/$local_extension"
 
 	iptables -P OUTPUT DROP
 	iptables -A OUTPUT -o tun+ -j ACCEPT
@@ -76,7 +71,10 @@ function _killswitchOn() {
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+	
 	ip6tables -P OUTPUT DROP
+	ip6tables -A INPUT -i lo -j ACCEPT
+	ip6tables -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 	
 	echo "$all_vpn_ips" > $DIR/.killswitch_ips
