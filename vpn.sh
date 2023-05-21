@@ -59,6 +59,14 @@ function _killswitchOn() {
 		echo "No vpn ips found"
 		exit 1
 	fi
+	
+	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	local_inet=($local_inet)
+	local_ip=${local_inet[1]}
+	local_extension="${local_ip##*/}"
+	local_ip=${local_ip%/*}
+	local_subnet="${local_ip%.*}"
+	local_subnet="${local_subnet}.0/$local_extension"
 
 	iptables -P OUTPUT DROP
 	iptables -A OUTPUT -o tun+ -j ACCEPT
@@ -98,6 +106,40 @@ function _postVPNDNS() {
 	dns_ip=$(cat "$DIR/.last_vpnip")
 
 	# TODO - Update VPN DNS if Needed
+}
+
+function _tablesRemoveLAN() {
+	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	local_inet=($local_inet)
+	local_ip=${local_inet[1]}
+	local_extension="${local_ip##*/}"
+	local_ip=${local_ip%/*}
+	local_subnet="${local_ip%.*}"
+	local_subnet="${local_subnet}.0/$local_extension"
+
+	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+	iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+	iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+	iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
+}
+
+function _tablesAddLAN() {
+	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	local_inet=($local_inet)
+	local_ip=${local_inet[1]}
+	local_extension="${local_ip##*/}"
+	local_ip=${local_ip%/*}
+	local_subnet="${local_ip%.*}"
+	local_subnet="${local_subnet}.0/$local_extension"
+
+	iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
+	iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+	iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
+	iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
+	iptables -A OUTPUT -d $local_subnet -j ACCEPT
+	iptables -A INPUT -s $local_subnet -j ACCEPT
 }
 
 function _updateeverything() {
@@ -142,7 +184,6 @@ function _updateip() {
 	fi
 
 	if ! [ "$ip" == "$ip_old" ]; then
-		#_postIP
 		airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
 	
 		local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
@@ -360,17 +401,10 @@ function disconnect() {
 	fi
 }
 
+
 function killswitch() {
 	_checkroot
 	
-	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
-	local_inet=($local_inet)
-	local_ip=${local_inet[1]}
-	local_extension="${local_ip##*/}"
-	local_ip=${local_ip%/*}
-	local_subnet="${local_ip%.*}"
-	local_subnet="${local_subnet}.0/$local_extension"
-
 	if [ "$1" == "on" ]; then
 		ks_status=""	
 		if [[ -f "$DIR/.killswitch_status" ]]; then
@@ -387,12 +421,7 @@ function killswitch() {
 			lan_status=$(cat "$DIR/.lan_status")
 		fi
 		if [ "$lan_status" == "on" ]; then
-			iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
-			iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
-			iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
-			iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
-			iptables -A OUTPUT -d $local_subnet -j ACCEPT
-			iptables -A INPUT -s $local_subnet -j ACCEPT
+			_tablesAddLAN
 		fi
 		
 		echo "on" > $DIR/.killswitch_status
@@ -408,14 +437,9 @@ function killswitch() {
 			echo "Killswitch already off"
 			exit 0
 		fi
-		
-		iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
-		iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
-		iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
-		iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
-		iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
-		iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
 
+		_tablesRemoveLAN
+		
 		_killswitchOff
 
 		echo "off" > $DIR/.killswitch_status
@@ -439,14 +463,6 @@ function lan() {
 
 	_checkroot
 	
-	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
-	local_inet=($local_inet)
-	local_ip=${local_inet[1]}
-	local_extension="${local_ip##*/}"
-	local_ip=${local_ip%/*}
-	local_subnet="${local_ip%.*}"
-	local_subnet="${local_subnet}.0/$local_extension"
-
 	if [ "$1" == "on" ]; then
 		lan_status=""	
 		if [[ -f "$DIR/.lan_status" ]]; then
@@ -461,12 +477,7 @@ function lan() {
 			ks_status=$(cat "$DIR/.killswitch_status")
 		fi
 		if [ "$ks_status" == "on" ]; then
-			iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
-			iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
-			iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
-			iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
-			iptables -A OUTPUT -d $local_subnet -j ACCEPT
-			iptables -A INPUT -s $local_subnet -j ACCEPT
+			_tablesAddLAN
 		else
 			echo "Killswitch not on, so not applying rules, but settings LAN to on for future"
 		fi
@@ -484,12 +495,7 @@ function lan() {
 			echo "LAN Already Off"
 			exit 1
 		fi
-		iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
-		iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
-		iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
-		iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
-		iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
-		iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
+		_tablesRemoveLAN
 		
 		echo "off" > $DIR/.lan_status
 		if ! [[ $EUID -ne 0 ]]; then
