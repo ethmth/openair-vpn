@@ -43,7 +43,7 @@ function _killswitchOff() {
 	iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
 	ip6tables -P OUTPUT ACCEPT
 	ip6tables -D OUTPUT -o tun+ -j ACCEPT
-}
+}	
 
 function _killswitchOn() {
 	_extractIPs
@@ -362,6 +362,14 @@ function disconnect() {
 
 function killswitch() {
 	_checkroot
+	
+	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	local_inet=($local_inet)
+	local_ip=${local_inet[1]}
+	local_extension="${local_ip##*/}"
+	local_ip=${local_ip%/*}
+	local_subnet="${local_ip%.*}"
+	local_subnet="${local_subnet}.0/$local_extension"
 
 	if [ "$1" == "on" ]; then
 		ks_status=""	
@@ -373,14 +381,24 @@ function killswitch() {
 		fi
 
 		_killswitchOn
+
+		lan_status=""	
+		if [[ -f "$DIR/.lan_status" ]]; then
+			lan_status=$(cat "$DIR/.lan_status")
+		fi
+		if [ "$lan_status" == "on" ]; then
+			iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
+			iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+			iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
+			iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
+			iptables -A OUTPUT -d $local_subnet -j ACCEPT
+			iptables -A INPUT -s $local_subnet -j ACCEPT
+		fi
 		
 		echo "on" > $DIR/.killswitch_status
 		if ! [[ $EUID -ne 0 ]]; then
 			chmod 666 $DIR/.killswitch_status
 		fi
-
-		sleep 1
-		_updateeverything
 	elif [ "$1" == "off" ]; then
 		ks_status=""	
 		if [[ -f "$DIR/.killswitch_status" ]]; then
@@ -390,6 +408,13 @@ function killswitch() {
 			echo "Killswitch already off"
 			exit 0
 		fi
+		
+		iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+		iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+		iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+		iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+		iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
+		iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
 
 		_killswitchOff
 
@@ -397,13 +422,13 @@ function killswitch() {
 		if ! [[ $EUID -ne 0 ]]; then
 			chmod 666 $DIR/.killswitch_status
 		fi
-
-		sleep 1		
-		_updateeverything
 	else
 		echo "Usage: vpn killswitch <on|off>"
 		exit 1
 	fi	
+	
+	sleep 1		
+	_updateeverything
 }
 
 function lan() {
@@ -421,7 +446,6 @@ function lan() {
 	local_ip=${local_ip%/*}
 	local_subnet="${local_ip%.*}"
 	local_subnet="${local_subnet}.0/$local_extension"
-	local_dns="${local_ip%.*}.1"
 
 	if [ "$1" == "on" ]; then
 		lan_status=""	
@@ -429,27 +453,29 @@ function lan() {
 			lan_status=$(cat "$DIR/.lan_status")
 		fi
 		if [ "$lan_status" == "on" ]; then
-			#iptables -D OUTPUT -d $local_subnet -j ACCEPT
-			#iptables -D INPUT -s $local_subnet -j ACCEPT
-			#iptables -D OUTPUT -d $local_dns -j DROP
-			#iptables -D INPUT -s $local_dns -j DROP
-			#iptables -D OUTPUT -d $local_subnet -p udp,tcp --dport 53 -j DROP
-			#iptables -D INPUT -s $local_subnet -p udp,tcp --dport 53 -j DROP
 			echo "LAN Already On"
 			exit 1
 		fi
-		iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
-		iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
-		iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
-		iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
+		ks_status=""	
+		if [[ -f "$DIR/.killswitch_status" ]]; then
+			ks_status=$(cat "$DIR/.killswitch_status")
+		fi
+		if [ "$ks_status" == "on" ]; then
+			iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
+			iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+			iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
+			iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
+			iptables -A OUTPUT -d $local_subnet -j ACCEPT
+			iptables -A INPUT -s $local_subnet -j ACCEPT
+		else
+			echo "Killswitch not on, so not applying rules, but settings LAN to on for future"
+		fi
 
-		iptables -A OUTPUT -d $local_subnet -j ACCEPT
-		iptables -A INPUT -s $local_subnet -j ACCEPT
-		#iptables -A OUTPUT -d $local_dns -j DROP
-		#iptables -A INPUT -s $local_dns -j DROP
-		
 		echo "on" > $DIR/.lan_status
-	else 
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR/.lan_status
+		fi
+	elif [ "$1" == "off" ]; then
 		lan_status=""	
 		if [[ -f "$DIR/.lan_status" ]]; then
 			lan_status=$(cat "$DIR/.lan_status")
@@ -458,20 +484,22 @@ function lan() {
 			echo "LAN Already Off"
 			exit 1
 		fi
-		iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
-		iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
-		iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP
-		iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP
-
-		iptables -D OUTPUT -d $local_subnet -j ACCEPT
-		iptables -D INPUT -s $local_subnet -j ACCEPT
-		#iptables -D OUTPUT -d $local_dns -j DROP
-		#iptables -D INPUT -s $local_dns -j DROP
+		iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+		iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+		iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+		iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+		iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
+		iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
 		
 		echo "off" > $DIR/.lan_status
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR/.lan_status
+		fi
+	else
+		echo "Usage: vpn lan <on|off>"
+		exit 1
 	fi
 	_updatestatus
-
 }
 
 function reset() {
