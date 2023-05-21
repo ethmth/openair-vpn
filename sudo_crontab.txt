@@ -1,5 +1,5 @@
 @reboot /usr/bin/vpn reset
-@reboot /usr/bin/vpn lan on startup
+@reboot /usr/bin/vpn lan off startup
 @reboot /usr/bin/vpn killswitch on
 @reboot /usr/bin/vpn connect startup
 */5 * * * * /usr/bin/vpn update
