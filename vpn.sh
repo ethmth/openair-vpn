@@ -319,8 +319,8 @@ function connect() {
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
 	if ! [ $openvpn_on -eq 0 ]; then
 		killall openvpn
+		sleep 1
 	fi
-	sleep 1
 
 	if [ ! -d "$DIR" ]; then
 		mkdir -p "$DIR"
@@ -377,9 +377,9 @@ function connect() {
 	fi
 
 	if [[ "$1" = "startup" ]]; then
-		sleep 15
+		sleep 10
 	else
-		sleep 5
+		sleep 3
 	fi
 	_updateeverything
 }
@@ -390,7 +390,7 @@ function disconnect() {
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
 	if ! [ $openvpn_on -eq 0 ]; then
 		killall openvpn
-		sleep 5
+		sleep 3
 		_updateeverything
 	fi
 
@@ -459,7 +459,7 @@ function killswitch() {
 function lan() {
 
 	if [ "$2" == "startup" ]; then
-		sleep 20
+		sleep 11
 	fi
 
 	_checkroot
