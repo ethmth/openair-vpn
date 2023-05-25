@@ -379,7 +379,7 @@ function connect() {
 	if [[ "$1" = "startup" ]]; then
 		sleep 10
 	else
-		sleep 3
+		sleep 4
 	fi
 	_updateeverything
 }
@@ -390,7 +390,7 @@ function disconnect() {
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
 	if ! [ $openvpn_on -eq 0 ]; then
 		killall openvpn
-		sleep 3
+		sleep 4
 		_updateeverything
 	fi
 
