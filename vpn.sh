@@ -320,6 +320,7 @@ function connect() {
 	if ! [ $openvpn_on -eq 0 ]; then
 		killall openvpn
 	fi
+	sleep 1
 
 	if [ ! -d "$DIR" ]; then
 		mkdir -p "$DIR"
