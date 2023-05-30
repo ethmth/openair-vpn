@@ -377,7 +377,7 @@ function connect() {
 	fi
 
 	if [[ "$1" = "startup" ]]; then
-		sleep 10
+		sleep 14
 	else
 		sleep 4
 	fi
@@ -459,7 +459,7 @@ function killswitch() {
 function lan() {
 
 	if [ "$2" == "startup" ]; then
-		sleep 11
+		sleep 15
 	fi
 
 	_checkroot
