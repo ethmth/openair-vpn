@@ -378,6 +378,8 @@ function connect() {
 
 	if [[ "$1" = "startup" ]]; then
 		sleep 14
+	elif [[ "$1" = "startuplong" ]]; then
+		sleep 19
 	else
 		sleep 4
 	fi
@@ -460,6 +462,8 @@ function lan() {
 
 	if [ "$2" == "startup" ]; then
 		sleep 15
+	elif [ "$2" == "startuplong" ]; then
+		sleep 20
 	fi
 
 	_checkroot
