@@ -518,7 +518,6 @@ function reset() {
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
 	rm $DIR/.killswitch_status
-	rm $DIR/.killswitch_ips
 	rm $DIR/.lan_status
 }
 
