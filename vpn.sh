@@ -29,23 +29,23 @@ function _killswitchOff() {
 		all_vpn_ips=$(cat "$DIR/.killswitch_ips")
 	fi
 	if [ "$all_vpn_ips" == "" ]; then
-		echo "Can't find killswitch_ips. Exiting without changing iptables"
-		exit 1
+		echo "Can't find killswitch_ips. Not changing iptables"
+	else
+		iptables -P OUTPUT ACCEPT
+		iptables -D OUTPUT -o tun+ -j ACCEPT
+		iptables -D INPUT -i lo -j ACCEPT
+		iptables -D OUTPUT -o lo -j ACCEPT
+		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
+		iptables -D INPUT -s 255.255.255.255 -j ACCEPT
+		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+		
+		ip6tables -P OUTPUT ACCEPT
+		ip6tables -D INPUT -i lo -j ACCEPT
+		ip6tables -D OUTPUT -o lo -j ACCEPT
+		ip6tables -D OUTPUT -o tun+ -j ACCEPT
 	fi
 	
-	iptables -P OUTPUT ACCEPT
-	iptables -D OUTPUT -o tun+ -j ACCEPT
-	iptables -D INPUT -i lo -j ACCEPT
-	iptables -D OUTPUT -o lo -j ACCEPT
-	iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
-	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
-	iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
-	iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
-
-	ip6tables -P OUTPUT ACCEPT
-	ip6tables -D INPUT -i lo -j ACCEPT
-	ip6tables -D OUTPUT -o lo -j ACCEPT
-	ip6tables -D OUTPUT -o tun+ -j ACCEPT
 }	
 
 function _killswitchOn() {
