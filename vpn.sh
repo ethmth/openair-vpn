@@ -114,6 +114,8 @@ function _tablesRemoveLAN() {
 	local_ip=${local_ip%/*}
 	local_subnet="${local_ip%.*}"
 	local_subnet="${local_subnet}.0/$local_extension"
+	
+	# TODO: Make this work with non /24 subnets
 
 	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
 	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
@@ -131,6 +133,8 @@ function _tablesAddLAN() {
 	local_ip=${local_ip%/*}
 	local_subnet="${local_ip%.*}"
 	local_subnet="${local_subnet}.0/$local_extension"
+
+	# TODO: Make this work with non /24 subnets
 
 	iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
 	iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
@@ -376,6 +380,7 @@ function connect() {
 		chmod 666 $DIR/.last_serverfile
 	fi
 
+	# TODO - Change these arbitrary sleeps to a check when internet access is achievable? (Maybe not cause KS might interfere)
 	if [[ "$1" = "startup" ]]; then
 		sleep 14
 	elif [[ "$1" = "startuplong" ]]; then
@@ -549,4 +554,5 @@ else
 	printf	"\t reset\n"
 	printf	"\t update\n"
 	exit 0
+	# TODO- Add an init option that would be in the crontab so we only have to have one line there
 fi
