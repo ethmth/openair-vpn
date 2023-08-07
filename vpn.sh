@@ -307,8 +307,6 @@ function _updatestatus() {
 		killall -1 vpn-listen 2>/dev/null
 	fi
 
-
-
 	echo "Public IP: ${ip}${home_ip}, VPN IP: ${vpn_ip}, City: ${city}, Type: ${typ}"
 }
 
@@ -380,14 +378,7 @@ function connect() {
 		chmod 666 $DIR/.last_serverfile
 	fi
 
-	# TODO - Change these arbitrary sleeps to a check when internet access is achievable? (Maybe not cause KS might interfere)
-	if [[ "$1" = "startup" ]]; then
-		sleep 14
-	elif [[ "$1" = "startuplong" ]]; then
-		sleep 19
-	else
-		sleep 4
-	fi
+	sleep 4
 	_updateeverything
 }
 
@@ -410,7 +401,6 @@ function disconnect() {
 
 function killswitch() {
 	
-
 	_checkroot
 	
 	if [ "$1" == "on" ]; then
@@ -464,12 +454,6 @@ function killswitch() {
 }
 
 function lan() {
-
-	if [ "$2" == "startup" ]; then
-		sleep 15
-	elif [ "$2" == "startuplong" ]; then
-		sleep 20
-	fi
 
 	_checkroot
 	
@@ -530,6 +514,13 @@ function update() {
 	_updateeverything	
 }
 
+function init() {
+	reset
+	killswitch on
+	connect
+	lan off
+}
+
 if [ "$1" == "check" ]; then
 	check ${@:2:$#-1}
 elif ([ "$1" == "connect" ] || [ "$1" == "on" ]); then
@@ -544,6 +535,8 @@ elif [ "$1" == "reset" ]; then
 	reset ${@:2:$#-1}
 elif [ "$1" == "update" ]; then
 	update ${@:2:$#-1}
+elif [ "$1" == "init" ]; then
+	init ${@:2:$#-1}
 else 
 	printf "Options \n"
 	printf	"\t check\n"
@@ -553,6 +546,6 @@ else
 	printf	"\t lan\n"
 	printf	"\t reset\n"
 	printf	"\t update\n"
+	printf	"\t init\n"
 	exit 0
-	# TODO- Add an init option that would be in the crontab so we only have to have one line there
 fi
