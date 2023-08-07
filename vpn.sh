@@ -107,15 +107,16 @@ function _postVPNDNS() {
 }
 
 function _tablesRemoveLAN() {
-	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
-	local_inet=($local_inet)
-	local_ip=${local_inet[1]}
-	local_extension="${local_ip##*/}"
-	local_ip=${local_ip%/*}
-	local_subnet="${local_ip%.*}"
-	local_subnet="${local_subnet}.0/$local_extension"
+	#local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	#local_inet=($local_inet)
+	#local_ip=${local_inet[1]}
+	#local_extension="${local_ip##*/}"
+	#local_ip=${local_ip%/*}
+	#local_subnet="${local_ip%.*}"
+	#local_subnet="${local_subnet}.0/$local_extension"
 	
-	# TODO: Make this work with non /24 subnets
+    local_subnet=$(/usr/bin/ip route | grep "$INTERFACE" | grep "/" | cut -d ' ' -f 1)
+    #echo "local subnet is $local_subnet"
 
 	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
 	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
@@ -126,15 +127,16 @@ function _tablesRemoveLAN() {
 }
 
 function _tablesAddLAN() {
-	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
-	local_inet=($local_inet)
-	local_ip=${local_inet[1]}
-	local_extension="${local_ip##*/}"
-	local_ip=${local_ip%/*}
-	local_subnet="${local_ip%.*}"
-	local_subnet="${local_subnet}.0/$local_extension"
-
-	# TODO: Make this work with non /24 subnets
+	#local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
+	#local_inet=($local_inet)
+	#local_ip=${local_inet[1]}
+	#local_extension="${local_ip##*/}"
+	#local_ip=${local_ip%/*}
+	#local_subnet="${local_ip%.*}"
+	#local_subnet="${local_subnet}.0/$local_extension"
+    
+    local_subnet=$(/usr/bin/ip route | grep "$INTERFACE" | grep "/" | cut -d ' ' -f 1)
+    #echo "local subnet is $local_subnet"
 
 	iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
 	iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
