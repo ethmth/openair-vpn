@@ -519,6 +519,8 @@ function init() {
 	killswitch on
 	connect
 	lan off
+    sleep 4
+    _updateeverything
 }
 
 if [ "$1" == "check" ]; then
