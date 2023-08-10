@@ -505,7 +505,9 @@ function init() {
 	lan off
     sleep 4
     _updateeverything
-    sleep 5
+    sleep 10
+    _updateeverything
+    sleep 10
     _updateeverything
 }
 
