@@ -505,6 +505,8 @@ function init() {
 	lan off
     sleep 4
     _updateeverything
+    sleep 5
+    _updateeverything
 }
 
 if [ "$1" == "check" ]; then
