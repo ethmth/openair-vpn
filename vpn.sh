@@ -8,7 +8,7 @@ IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 REST_DNS_URL="http://127.0.0.1:24601"
 
-WG_IFACE="wg0"
+WG_IFACE="tun0"
 
 function _checkroot() {
 	if [[ $EUID -ne 0 ]]; then
@@ -46,7 +46,7 @@ function _killswitchOff() {
 		iptables -D OUTPUT -o lo -j ACCEPT
 		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
 		iptables -D INPUT -s 255.255.255.255 -j ACCEPT
-		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
 		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
 		
 		ip6tables -P OUTPUT ACCEPT
@@ -78,7 +78,7 @@ function _killswitchOn() {
 	iptables -A OUTPUT -o lo -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
-	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
 	
 	ip6tables -P OUTPUT DROP
@@ -312,7 +312,7 @@ function _disconnect() {
 	called_from=$1
 
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
-	wireguard_on=$(ip a | grep "wg0" | wc -l)
+	wireguard_on=$(ip a | grep "$WG_IFACE" | wc -l)
 	if ! ([ $openvpn_on -eq 0 ] && [ $wireguard_on -eq 0 ]); then
 		if ! [ $openvpn_on -eq 0 ]; then
 			killall openvpn
@@ -331,7 +331,7 @@ function _disconnect() {
 	fi
 
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
-	wireguard_on=$(ip a | grep "wg0" | wc -l)
+	wireguard_on=$(ip a | grep "$WG_IFACE" | wc -l)
 
 	if [ $openvpn_on -eq 0 ]; then
 		echo "Openvpn disconnected"
@@ -526,6 +526,7 @@ function reset() {
 	rm $DIR/.ipinfo
 	rm $DIR/.killswitch_status
 	rm $DIR/.lan_status
+	rm $DIR/$WG_IFACE.conf
 }
 
 function update() {
