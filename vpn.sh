@@ -8,6 +8,8 @@ IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 REST_DNS_URL="http://127.0.0.1:24601"
 
+WG_IFACE="wg0"
+
 function _checkroot() {
 	if [[ $EUID -ne 0 ]]; then
 		echo "This script must be run with root/sudo privileges."
@@ -16,7 +18,16 @@ function _checkroot() {
 }
 
 function _extractIPs() {
-	cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' > $DIR/.vpnips
+	# cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' > $DIR/.vpnips
+
+	ips=$(cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
+	wg_ips=$(cat $DIR/*.conf | grep "Endpoint" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
+
+	ips="$ips\n$wg_ips"
+	ips=$(echo -e "$ips" | sort | uniq)
+
+	echo "$ips" > $DIR/.vpnips
+
 	if ! [[ $EUID -ne 0 ]]; then
 		chmod 666 $DIR/.vpnips
 	fi
@@ -55,7 +66,7 @@ function _killswitchOn() {
 		if ! [ "$all_vpn_ips" == "" ]; then
 			all_vpn_ips+=","
 		fi 
-		all_vpn_ips+="$line/24"
+		all_vpn_ips+="$line"
 	done < "$DIR/.vpnips"
 
 	if [ "$all_vpn_ips" == "" ]; then
@@ -298,15 +309,63 @@ function check() {
 	curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name'
 }
 
+function _disconnect() {
+
+	called_from=$1
+
+	openvpn_on=$(ps -A | grep openvpn | wc -l)
+	wireguard_on=$(ip a | grep "wg0" | wc -l)
+	if ! ([ $openvpn_on -eq 0 ] && [ $wireguard_on -eq 0 ]); then
+		if ! [ $openvpn_on -eq 0 ]; then
+			killall openvpn
+		fi
+
+		if ! [ $wireguard_on -eq 0 ]; then
+			wg-quick down $DIR/$WG_IFACE.conf
+		fi
+
+		if [ "$called_from" == "disconnect" ]; then
+			sleep 4
+			_updateeverything
+		elif [ "$called_from" == "connect" ]; then
+			sleep 1
+		fi
+	fi
+
+	openvpn_on=$(ps -A | grep openvpn | wc -l)
+	wireguard_on=$(ip a | grep "wg0" | wc -l)
+
+	if [ $openvpn_on -eq 0 ]; then
+		echo "Openvpn disconnected"
+	fi
+
+	if [ $wireguard_on -eq 0 ]; then
+		echo "Wireguard disconnected"
+	fi
+
+}
+
+
+function _check_openvpn() {
+	server_file=$1
+
+	is_ovpn=$(echo "$server_file" | grep ".ovpn" | wc -l)
+
+	echo "$is_ovpn"
+}
+
+
 function connect() {
 
 	_checkroot
 
-	openvpn_on=$(ps -A | grep openvpn | wc -l)
-	if ! [ $openvpn_on -eq 0 ]; then
-		killall openvpn
-		sleep 1
-	fi
+	# openvpn_on=$(ps -A | grep openvpn | wc -l)
+	# if ! [ $openvpn_on -eq 0 ]; then
+	# 	killall openvpn
+	# 	sleep 1
+	# fi
+
+	_disconnect "connect"
 
 	if [ ! -d "$DIR" ]; then
 		mkdir -p "$DIR"
@@ -336,7 +395,7 @@ function connect() {
 
 	server_file=""
 	if [[ "$1" = "new" ]]; then
-		server_file=$(ls -1 $DIR | grep ovpn | fzf)
+		server_file=$(ls -1 $DIR | grep ".conf\|.ovpn" | grep -v "$WG_IFACE.conf" | fzf)
 	else
 		server_file=""
 		if [[ -f "$DIR/.last_serverfile" ]]; then
@@ -354,7 +413,14 @@ function connect() {
 	fi
 
 	echo "Connecting to $server_file..."
-	openvpn --script-security 2 --up /etc/openvpn/update-resolv-conf --down /etc/openvpn/update-resolv-conf --down-pre --config $DIR/$server_file --daemon
+
+	is_openvpn=$(_check_openvpn $server_file)
+	if (( is_openvpn )); then
+		openvpn --script-security 2 --up /etc/openvpn/update-resolv-conf --down /etc/openvpn/update-resolv-conf --down-pre --config $DIR/$server_file --daemon
+	else
+		cp $DIR/$server_file $DIR/$WG_IFACE.conf
+		wg-quick up $DIR/$WG_IFACE.conf
+	fi
 
 	old_file=$(cat "$DIR/.last_serverfile")
 	if ! [[ "$old_file" = "$server_file" ]]; then
@@ -369,17 +435,33 @@ function connect() {
 function disconnect() {
 	_checkroot
 
-	openvpn_on=$(ps -A | grep openvpn | wc -l)
-	if ! [ $openvpn_on -eq 0 ]; then
-		killall openvpn
-		sleep 4
-		_updateeverything
-	fi
+	# openvpn_on=$(ps -A | grep openvpn | wc -l)
+	# wireguard_on=$(ip a | grep "wg0" | wc -l)
+	# if ! ([ $openvpn_on -eq 0 ] && [ $wireguard_on -eq 0 ]); then
+	# 	if ! [ $openvpn_on -eq 0 ]; then
+	# 		killall openvpn
+	# 	fi
 
-	openvpn_on=$(ps -A | grep openvpn | wc -l)
-	if [ $openvpn_on -eq 0 ]; then
-		echo "Openvpn disconnected"
-	fi
+	# 	if ! [ $wireguard_on -eq 0 ]; then
+	# 		wg-quick down $DIR/$WG_IFACE.conf
+	# 	fi
+
+	# 	sleep 4
+	# 	_updateeverything
+	# fi
+
+	_disconnect "disconnect"
+
+	# openvpn_on=$(ps -A | grep openvpn | wc -l)
+	# wireguard_on=$(ip a | grep "wg0" | wc -l)
+
+	# if [ $openvpn_on -eq 0 ]; then
+	# 	echo "Openvpn disconnected"
+	# fi
+
+	# if [ $wireguard_on -eq 0 ]; then
+	# 	echo "Wireguard disconnected"
+	# fi
 }
 
 
