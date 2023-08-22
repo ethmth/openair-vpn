@@ -18,8 +18,6 @@ function _checkroot() {
 }
 
 function _extractIPs() {
-	# cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' > $DIR/.vpnips
-
 	ips=$(cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
 	wg_ips=$(cat $DIR/*.conf | grep "Endpoint" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
 
@@ -359,37 +357,17 @@ function connect() {
 
 	_checkroot
 
-	# openvpn_on=$(ps -A | grep openvpn | wc -l)
-	# if ! [ $openvpn_on -eq 0 ]; then
-	# 	killall openvpn
-	# 	sleep 1
-	# fi
-
 	_disconnect "connect"
 
 	if [ ! -d "$DIR" ]; then
-		mkdir -p "$DIR"
-		if ! [[ $EUID -ne 0 ]]; then
-			chmod 666 $DIR
-		fi
+		echo "$DIR does not exist"
+		exit 1
 	fi
 
-	count=$(ls -a1 $DIR | grep ovpn | wc -l)
-	zip_count=$(unzip -l "$DIR/AirVPN.zip" | grep -oE '[0-9]+ files' | grep -oE '[0-9]+')
-	md5_hash=$(cat "$DIR/AirVPN.md5")
-
-	if [ -e "$DIR/AirVPN.zip" ]; then
-		md5_cur=$(md5sum "$DIR/AirVPN.zip" | cut -d' ' -f1)
-		if ! ([ "$count" -eq "$zip_count" ] && [ "$md5_cur" = "$md5_hash" ]); then
-			rm $DIR/*.ovpn
-			unzip $DIR/AirVPN.zip -d $DIR
-			echo "$md5_cur" > $DIR/AirVPN.md5
-		fi
-		count=$(ls -a1 $DIR | grep ovpn | wc -l)
-	fi
+	count=$(ls -a1 $DIR | grep ".conf\|.ovpn" | wc -l)
 
 	if [ "$count" -eq 0 ]; then
-		echo "No .ovpn files found."
+		echo "No .conf or .ovpn files found."
 		exit 1
 	fi
 
@@ -435,33 +413,7 @@ function connect() {
 function disconnect() {
 	_checkroot
 
-	# openvpn_on=$(ps -A | grep openvpn | wc -l)
-	# wireguard_on=$(ip a | grep "wg0" | wc -l)
-	# if ! ([ $openvpn_on -eq 0 ] && [ $wireguard_on -eq 0 ]); then
-	# 	if ! [ $openvpn_on -eq 0 ]; then
-	# 		killall openvpn
-	# 	fi
-
-	# 	if ! [ $wireguard_on -eq 0 ]; then
-	# 		wg-quick down $DIR/$WG_IFACE.conf
-	# 	fi
-
-	# 	sleep 4
-	# 	_updateeverything
-	# fi
-
 	_disconnect "disconnect"
-
-	# openvpn_on=$(ps -A | grep openvpn | wc -l)
-	# wireguard_on=$(ip a | grep "wg0" | wc -l)
-
-	# if [ $openvpn_on -eq 0 ]; then
-	# 	echo "Openvpn disconnected"
-	# fi
-
-	# if [ $wireguard_on -eq 0 ]; then
-	# 	echo "Wireguard disconnected"
-	# fi
 }
 
 
