@@ -313,6 +313,12 @@ function _disconnect() {
 
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
 	wireguard_on=$(ip a | grep "$WG_IFACE" | wc -l)
+	if ([ $wireguard_on -ne 0 ] && [ -e "$DIR/$WG_IFACE.conf" ]); then
+		wireguard_on=1
+	else
+		wireguard_on=0
+	fi
+	
 	if ! ([ $openvpn_on -eq 0 ] && [ $wireguard_on -eq 0 ]); then
 		if ! [ $openvpn_on -eq 0 ]; then
 			killall openvpn
@@ -320,6 +326,7 @@ function _disconnect() {
 
 		if ! [ $wireguard_on -eq 0 ]; then
 			wg-quick down $DIR/$WG_IFACE.conf
+			rm $DIR/$WG_IFACE.conf
 		fi
 
 		if [ "$called_from" == "disconnect" ]; then
@@ -332,6 +339,11 @@ function _disconnect() {
 
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
 	wireguard_on=$(ip a | grep "$WG_IFACE" | wc -l)
+	if ([ $wireguard_on -ne 0 ] && [ -e "$DIR/$WG_IFACE.conf" ]); then
+		wireguard_on=1
+	else
+		wireguard_on=0
+	fi
 
 	if [ $openvpn_on -eq 0 ]; then
 		echo "Openvpn disconnected"
