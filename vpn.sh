@@ -548,6 +548,8 @@ function update() {
 function init() {
 	reset
 	killswitch on
+	# Need delay here for wireguard connections to work on startup for some reason
+	sleep 10
 	connect
 	lan off
     sleep 4
