@@ -8,6 +8,8 @@ IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 REST_DNS_URL="http://127.0.0.1:24601"
 
+KS_CONNECT_TIMEOUT=10
+
 WG_IFACE="tun0"
 
 function _checkroot() {
@@ -549,11 +551,10 @@ function init() {
 	reset
 	killswitch on
 	# Need delay here for wireguard connections to work on startup for some reason
-	sleep 5
+	sleep $KS_CONNECT_TIMEOUT
 	connect
 	lan off
     sleep 4
-	connect
     _updateeverything
     sleep 10
     _updateeverything
