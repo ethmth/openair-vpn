@@ -8,7 +8,7 @@ IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 REST_DNS_URL="http://127.0.0.1:24601"
 
-KS_CONNECT_TIMEOUT=10
+KS_CONNECT_TIMEOUT=15
 
 WG_IFACE="tun0"
 
