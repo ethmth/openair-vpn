@@ -8,9 +8,24 @@ IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 REST_DNS_URL="http://127.0.0.1:24601"
 
-KS_CONNECT_TIMEOUT=15
-
+LAN_DEFAULT="on"
+IFTTT_ON=1
+HOST_TO_PING="1.1.1.1"
 WG_IFACE="tun0"
+
+function has_local_ip() {
+  local_ip=$(ip addr show "$INTERFACE" | grep -oP 'inet\s+\K[\d.]+')
+  if [[ "$local_ip" =~ ^192\.168\. || "$local_ip" =~ ^10\. || "$local_ip" =~ ^172\.16\. ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function check_internet_connectivity() {
+  ping -c 1 -W 1 "$HOST_TO_PING" &> /dev/null
+  return $?
+}
 
 function _checkroot() {
 	if [[ $EUID -ne 0 ]]; then
@@ -99,10 +114,12 @@ function _postip() {
 	
 	LOCAL_IP=$1
 	VPN_IP=$2
-		
-	#echo "Running curl --connect-timeout 5 -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
-	curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY} 2>/dev/null
-	curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
+	
+	if (( IFTTT_ON )); then
+		#echo "Running curl --connect-timeout 5 -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
+		curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY} 2>/dev/null
+		curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
+	fi
 }
 
 function _postLocalDNS() {
@@ -488,6 +505,11 @@ function killswitch() {
 function lan() {
 
 	_checkroot
+
+	if ! has_local_ip; then
+  		echo "Interface $INTERFACE does not have a local IP Address. Doing nothing."
+  		exit 1
+	fi
 	
 	if [ "$1" == "on" ]; then
 		lan_status=""	
@@ -550,15 +572,16 @@ function update() {
 function init() {
 	reset
 	killswitch on
-	# Need delay here for wireguard connections to work on startup for some reason
-	sleep $KS_CONNECT_TIMEOUT
+	while ! has_local_ip; do
+  		echo "Waiting for a local IP address..."
+  		sleep 1
+	done
 	connect
-	lan off
-    sleep 4
-    _updateeverything
-    sleep 10
-    _updateeverything
-    sleep 10
+	lan $LAN_DEFAULT
+    while ! check_internet_connectivity; do
+  		echo "No internet connectivity. Waiting..."
+  		sleep 1
+	done
     _updateeverything
 }
 
