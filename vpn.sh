@@ -61,6 +61,7 @@ function _killswitchOff() {
 		iptables -D OUTPUT -o tun+ -j ACCEPT
 		iptables -D INPUT -i lo -j ACCEPT
 		iptables -D OUTPUT -o lo -j ACCEPT
+		iptables -D OUTPUT -o virbr+ -j ACCEPT
 		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
 		iptables -D INPUT -s 255.255.255.255 -j ACCEPT
 		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
@@ -93,6 +94,7 @@ function _killswitchOn() {
 	iptables -A OUTPUT -o tun+ -j ACCEPT
 	iptables -A INPUT -i lo -j ACCEPT
 	iptables -A OUTPUT -o lo -j ACCEPT
+	iptables -A OUTPUT -o virbr+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
