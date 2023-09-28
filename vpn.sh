@@ -70,6 +70,7 @@ function _killswitchOff() {
 		ip6tables -P OUTPUT ACCEPT
 		ip6tables -D INPUT -i lo -j ACCEPT
 		ip6tables -D OUTPUT -o lo -j ACCEPT
+		ip6tables -D OUTPUT -o virbr+ -j ACCEPT
 		ip6tables -D OUTPUT -o tun+ -j ACCEPT
 	fi
 	
@@ -103,6 +104,7 @@ function _killswitchOn() {
 	ip6tables -P OUTPUT DROP
 	ip6tables -A INPUT -i lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT
+	ip6tables -A OUTPUT -o virbr+ -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 	
 	echo "$all_vpn_ips" > $DIR/.killswitch_ips
