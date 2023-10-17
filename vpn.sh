@@ -62,6 +62,7 @@ function _killswitchOff() {
 		iptables -D INPUT -i lo -j ACCEPT
 		iptables -D OUTPUT -o lo -j ACCEPT
 		iptables -D OUTPUT -o virbr+ -j ACCEPT
+		iptables -D OUTPUT -o docker+ -j ACCEPT
 		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
 		iptables -D INPUT -s 255.255.255.255 -j ACCEPT
 		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
@@ -71,6 +72,7 @@ function _killswitchOff() {
 		ip6tables -D INPUT -i lo -j ACCEPT
 		ip6tables -D OUTPUT -o lo -j ACCEPT
 		ip6tables -D OUTPUT -o virbr+ -j ACCEPT
+		ip6tables -D OUTPUT -o docker+ -j ACCEPT
 		ip6tables -D OUTPUT -o tun+ -j ACCEPT
 	fi
 	
@@ -96,6 +98,7 @@ function _killswitchOn() {
 	iptables -A INPUT -i lo -j ACCEPT
 	iptables -A OUTPUT -o lo -j ACCEPT
 	iptables -A OUTPUT -o virbr+ -j ACCEPT
+	iptables -A OUTPUT -o docker+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
 	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
@@ -105,6 +108,7 @@ function _killswitchOn() {
 	ip6tables -A INPUT -i lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o virbr+ -j ACCEPT
+	ip6tables -A OUTPUT -o docker+ -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 	
 	echo "$all_vpn_ips" > $DIR/.killswitch_ips
