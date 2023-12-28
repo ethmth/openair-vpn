@@ -6,7 +6,6 @@ INTERFACE="eth0"
 IFTTT_KEY=""
 IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
-REST_DNS_URL="http://127.0.0.1:24601"
 
 LAN_DEFAULT="on"
 IFTTT_ON=1
@@ -130,7 +129,6 @@ function _postip() {
 	if (( IFTTT_ON )); then
 		#echo "Running curl --connect-timeout 5 -o /dev/null -X POST -H \"Content-Type: application/json\" -d \"{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}\" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY}"
 		curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"message\": \"${IFTTT_MESSAGE}\",\"local-ip\": \"${LOCAL_IP}\",\"vpn-ip\": \"${VPN_IP}\"}" https://maker.ifttt.com/trigger/${IFTTT_EVENT}/json/with/key/${IFTTT_KEY} 2>/dev/null
-		curl --connect-timeout 5 -o /dev/null -X POST -H "Content-Type: application/json" -d "{\"id\": \"$(cat /etc/hostname)\",\"local\": \"${LOCAL_IP}\",\"ip\": \"${VPN_IP}\"}" $REST_DNS_URL/ip 2>/dev/null
 	fi
 }
 
