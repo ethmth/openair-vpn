@@ -61,6 +61,7 @@ function _killswitchOff() {
 		iptables -D INPUT -i lo -j ACCEPT
 		iptables -D OUTPUT -o lo -j ACCEPT
 		iptables -D OUTPUT -o virbr+ -j ACCEPT
+        iptables -D OUTPUT -o vmnet+ -j ACCEPT
 		iptables -D OUTPUT -o docker+ -j ACCEPT
 		iptables -D OUTPUT -o br-+ -j ACCEPT
 		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
@@ -72,6 +73,7 @@ function _killswitchOff() {
 		ip6tables -D INPUT -i lo -j ACCEPT
 		ip6tables -D OUTPUT -o lo -j ACCEPT
 		ip6tables -D OUTPUT -o virbr+ -j ACCEPT
+        ip6tables -D OUTPUT -o vmnet+ -j ACCEPT
 		ip6tables -D OUTPUT -o docker+ -j ACCEPT
 		ip6tables -D OUTPUT -o br-+ -j ACCEPT
 		ip6tables -D OUTPUT -o tun+ -j ACCEPT
@@ -99,6 +101,7 @@ function _killswitchOn() {
 	iptables -A INPUT -i lo -j ACCEPT
 	iptables -A OUTPUT -o lo -j ACCEPT
 	iptables -A OUTPUT -o virbr+ -j ACCEPT
+    iptables -A OUTPUT -o vmnet+ -j ACCEPT
 	iptables -A OUTPUT -o docker+ -j ACCEPT
 	iptables -A OUTPUT -o br-+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
@@ -110,6 +113,7 @@ function _killswitchOn() {
 	ip6tables -A INPUT -i lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o virbr+ -j ACCEPT
+    ip6tables -A OUTPUT -o vmnet+ -j ACCEPT
 	ip6tables -A OUTPUT -o docker+ -j ACCEPT
 	ip6tables -A OUTPUT -o br-+ -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
