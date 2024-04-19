@@ -177,7 +177,6 @@ function _updateeverything() {
 }
 
 function _updateip() {
-	
 	ipinfo=$(curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
 	curl_exit_status=$?
 	if [ $curl_exit_status -eq 0 ]; then
@@ -214,6 +213,12 @@ function _updateip() {
 
 	if ! [ "$ip" == "$ip_old" ]; then
 		airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
+		if [ "$PROVIDER" == "AzireVPN" ]; then
+			airvpn_connected=$(curl -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
+			if [ "$number" -gt 0 ]; then
+    			airvpn_connected=1
+			fi
+		fi
 	
 		local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
 		local_inet=($local_inet)
