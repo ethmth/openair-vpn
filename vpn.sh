@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROVIDER="AirVPN"
+PROVIDER="AzireVPN"
 DIR="/home/me/.vpn"
 DEFAULT_FILE="AirVPN_SG-Singapore_Lacaille_TCP-443-Entry3.ovpn"
 INTERFACE="eth0"
@@ -177,7 +177,11 @@ function _updateeverything() {
 }
 
 function _updateip() {
-	ipinfo=$(curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	if [ "$PROVIDER" == "AirVPN" ]; then
+		ipinfo=$(curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	else
+		ipinfo=$(curl --connect-timeout 5 https://ipinfo.io/json 2>/dev/null | jq -r '.ip, .org, .city')
+	fi
 	curl_exit_status=$?
 	if [ $curl_exit_status -eq 0 ]; then
 		while IFS= read -r line; do
@@ -215,7 +219,7 @@ function _updateip() {
 		airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
 		if [ "$PROVIDER" == "AzireVPN" ]; then
 			airvpn_connected=$(curl -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
-			if [ "$number" -gt 0 ]; then
+			if [ "$airvpn_connected" -gt 0 ]; then
     			airvpn_connected=1
 			fi
 		fi
@@ -343,7 +347,11 @@ function _updatestatus() {
 }
 
 function check() {
-	curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name'
+	if [ "$PROVIDER" == "AirVPN" ]; then
+		ipinfo=$(curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	else
+		ipinfo=$(curl --connect-timeout 5 https://ipinfo.io/json 2>/dev/null | jq -r '.ip, .org, .city')
+	fi
 }
 
 function _disconnect() {
@@ -369,7 +377,7 @@ function _disconnect() {
 		fi
 
 		if [ "$called_from" == "disconnect" ]; then
-			sleep 4
+			sleep 3
 			_updateeverything
 		elif [ "$called_from" == "connect" ]; then
 			sleep 1
