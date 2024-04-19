@@ -1,5 +1,6 @@
 #!/bin/bash
 
+PROVIDER="AirVPN"
 DIR="/home/me/.vpn"
 DEFAULT_FILE="AirVPN_SG-Singapore_Lacaille_TCP-443-Entry3.ovpn"
 INTERFACE="eth0"
