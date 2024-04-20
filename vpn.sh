@@ -8,7 +8,7 @@ IFTTT_KEY=""
 IFTTT_EVENT="pc_awoken"
 IFTTT_MESSAGE="My pc got a new ip!"
 
-LAN_DEFAULT="on"
+LAN_DEFAULT="off"
 IFTTT_ON=1
 HOST_TO_PING="1.1.1.1"
 WG_IFACE="tun0"
@@ -52,79 +52,30 @@ function is_ip() {
     fi
 }
 
-# function is_domain() {
-#     local domain=$1
-#     if [[ $domain =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
-#         return 0
-#     else
-#         return 1
-#     fi
-# }
-
-# function _extractIPs() {
-# 	ips=$(cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
-# 	wg_ips=$(cat $DIR/*.conf | grep "Endpoint" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
-
-# 	ips="$ips\n$wg_ips"
-# 	ips=$(echo -e "$ips" | sort | uniq)
-
-# 	echo "$ips" > $DIR/.vpnips
-
-# 	if ! [[ $EUID -ne 0 ]]; then
-# 		chmod 666 $DIR/.vpnips
-# 	fi
-# }
 
 function _killswitchOff() {
-	# _unpokeIPs
-
-	# all_vpn_ips=""	
-	# if [[ -f "$DIR/.killswitch_ips" ]]; then
-	# 	all_vpn_ips=$(cat "$DIR/.killswitch_ips")
-	# fi
-	# if [ "$all_vpn_ips" == "" ]; then
-	# 	echo "Can't find killswitch_ips. Not changing iptables"
-	# else
-		iptables -P OUTPUT ACCEPT
-		iptables -D OUTPUT -o tun+ -j ACCEPT
-		iptables -D INPUT -i lo -j ACCEPT
-		iptables -D OUTPUT -o lo -j ACCEPT
-		iptables -D OUTPUT -o virbr+ -j ACCEPT
-        iptables -D OUTPUT -o vmnet+ -j ACCEPT
-		iptables -D OUTPUT -o docker+ -j ACCEPT
-		iptables -D OUTPUT -o br-+ -j ACCEPT
-		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
-		iptables -D INPUT -s 255.255.255.255 -j ACCEPT
-		# iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
-		# iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
-		
-		ip6tables -P OUTPUT ACCEPT
-		ip6tables -D INPUT -i lo -j ACCEPT
-		ip6tables -D OUTPUT -o lo -j ACCEPT
-		ip6tables -D OUTPUT -o virbr+ -j ACCEPT
-        ip6tables -D OUTPUT -o vmnet+ -j ACCEPT
-		ip6tables -D OUTPUT -o docker+ -j ACCEPT
-		ip6tables -D OUTPUT -o br-+ -j ACCEPT
-		ip6tables -D OUTPUT -o tun+ -j ACCEPT
-	# fi
+	iptables -P OUTPUT ACCEPT
+	iptables -D OUTPUT -o tun+ -j ACCEPT
+	iptables -D INPUT -i lo -j ACCEPT
+	iptables -D OUTPUT -o lo -j ACCEPT
+	iptables -D OUTPUT -o virbr+ -j ACCEPT
+	iptables -D OUTPUT -o vmnet+ -j ACCEPT
+	iptables -D OUTPUT -o docker+ -j ACCEPT
+	iptables -D OUTPUT -o br-+ -j ACCEPT
+	iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
+	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
 	
+	ip6tables -P OUTPUT ACCEPT
+	ip6tables -D INPUT -i lo -j ACCEPT
+	ip6tables -D OUTPUT -o lo -j ACCEPT
+	ip6tables -D OUTPUT -o virbr+ -j ACCEPT
+	ip6tables -D OUTPUT -o vmnet+ -j ACCEPT
+	ip6tables -D OUTPUT -o docker+ -j ACCEPT
+	ip6tables -D OUTPUT -o br-+ -j ACCEPT
+	ip6tables -D OUTPUT -o tun+ -j ACCEPT
 }	
 
 function _killswitchOn() {
-	# _extractIPs
-	# all_vpn_ips=""
-	# while IFS= read -r line; do
-	# 	if ! [ "$all_vpn_ips" == "" ]; then
-	# 		all_vpn_ips+=","
-	# 	fi 
-	# 	all_vpn_ips+="$line"
-	# done < "$DIR/.vpnips"
-
-	# if [ "$all_vpn_ips" == "" ]; then
-	# 	echo "No vpn ips found"
-	# 	exit 1
-	# fi
-
 	iptables -P OUTPUT DROP
 	iptables -A OUTPUT -o tun+ -j ACCEPT
 	iptables -A INPUT -i lo -j ACCEPT
@@ -135,8 +86,6 @@ function _killswitchOn() {
 	iptables -A OUTPUT -o br-+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
-	# iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
-	# iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
 	
 	ip6tables -P OUTPUT DROP
 	ip6tables -A INPUT -i lo -j ACCEPT
@@ -146,23 +95,10 @@ function _killswitchOn() {
 	ip6tables -A OUTPUT -o docker+ -j ACCEPT
 	ip6tables -A OUTPUT -o br-+ -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
-	
-	# echo "$all_vpn_ips" > $DIR/.killswitch_ips
-	# if ! [[ $EUID -ne 0 ]]; then
-	# 	chmod 666 $DIR/.killswitch_ips
-	# fi
 }
 
 function _pokeIP() {
 	file=$1
-
-	# ks_status=""	
-	# if [[ -f "$DIR/.killswitch_status" ]]; then
-	# 	ks_status=$(cat "$DIR/.killswitch_status")
-	# fi
-	# if ! [ "$ks_status" == "on" ]; then
-	# 	return 0
-	# fi
 
 	file_is_wireguard=1
 	if echo "$file" | grep -q ".ovpn"; then
@@ -478,10 +414,10 @@ function _disconnect() {
 		_unpokeIPs
 
 		if [ "$called_from" == "disconnect" ]; then
-			sleep 3
-			_updateeverything
-		elif [ "$called_from" == "connect" ]; then
 			sleep 1
+			_updateeverything
+		# elif [ "$called_from" == "connect" ]; then
+			# sleep 1
 		fi
 	fi
 
@@ -568,7 +504,7 @@ function connect() {
 		chmod 666 $DIR/.last_serverfile
 	fi
 
-	sleep 3
+	sleep 2
 	_updateeverything
 }
 
@@ -692,6 +628,7 @@ function reset() {
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
 	rm $DIR/.killswitch_status
+	rm $DIR/.poked_ips
 	rm $DIR/.lan_status
 	rm $DIR/$WG_IFACE.conf
 }
