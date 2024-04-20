@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROVIDER="AirVPN"
+PROVIDER="AzireVPN"
 DIR="/home/me/.vpn"
 DEFAULT_FILE="AirVPN_SG-Singapore_Lacaille_TCP-443-Entry3.ovpn"
 INTERFACE="eth0"
@@ -11,6 +11,7 @@ IFTTT_MESSAGE="My pc got a new ip!"
 LAN_DEFAULT="off"
 IFTTT_ON=1
 HOST_TO_PING="1.1.1.1"
+DNS_SERVER="1.1.1.1"
 WG_IFACE="tun0"
 
 function has_local_ip() {
@@ -117,8 +118,12 @@ function _pokeIP() {
 	if ((is_ip_address)); then
 		ip_address="$domain_or_ip"
 	else
-		# TODO Poke hole in DNS
-		echo "TODO not yet implemented"
+		iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $DNS_SERVER -j ACCEPT
+		iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $DNS_SERVER -j ACCEPT
+		ip_address=$(dig +short @$DNS_SERVER "$domain_or_ip")
+		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $DNS_SERVER -j ACCEPT
+		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $DNS_SERVER -j ACCEPT
+		echo "DNS Resolved to $ip_address"
 	fi
 
 	if ! [ "$ip_address" == "" ]; then
