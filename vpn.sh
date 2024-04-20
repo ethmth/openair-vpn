@@ -40,12 +40,15 @@ function is_ip() {
         IFS='.' read -r -a octets <<< "$ip"
         for octet in "${octets[@]}"; do
             if (( octet < 0 || octet > 255 )); then
-                return 1
+				echo "0"
+                return 0
             fi
         done
-        return 0
-    else
+		echo "1"
         return 1
+    else
+		echo "0"
+        return 0
     fi
 }
 
