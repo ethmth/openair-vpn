@@ -183,6 +183,17 @@ function _updateip() {
 		ipinfo=$(curl --connect-timeout 5 https://ipinfo.io/json 2>/dev/null | jq -r '.ip, .org, .city')
 	fi
 	curl_exit_status=$?
+
+	connected=$(echo "$ipinfo" | grep -i "AirVPN" | wc -l)
+	if [ "$PROVIDER" == "AzireVPN" ]; then
+		connected=$(curl -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
+		if [ "$connected" -gt 0 ]; then
+    		connected=1
+		fi
+	fi
+
+	ipinfo="${ipinfo}"$'\n'"${connected}"
+
 	if [ $curl_exit_status -eq 0 ]; then
 		while IFS= read -r line; do
     		if [ -z "$ip" ]; then
@@ -191,12 +202,15 @@ function _updateip() {
         		typ="$line"
     		elif [ -z "$city" ]; then
         		city="$line"
+    		elif [ -z "$connected" ]; then
+        		connected="$line"
     		fi
 		done <<< "$ipinfo"
 	fi
 	ip_old=""
 	typ_old=""
 	city_old=""
+	connected_old=""
 	if [[ -e "$DIR/.ipinfo" ]]; then
 		ipinfo_old=$(cat "$DIR/.ipinfo")
 		while IFS= read -r line; do
@@ -206,6 +220,8 @@ function _updateip() {
         		typ_old="$line"
     		elif [ -z "$city_old" ]; then
         		city_old="$line"
+    		elif [ -z "$connected_old" ]; then
+        		connected_old="$line"
     		fi
 		done <<< "$ipinfo_old"
 	fi
@@ -216,20 +232,12 @@ function _updateip() {
 	fi
 
 	if ! [ "$ip" == "$ip_old" ]; then
-		airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
-		if [ "$PROVIDER" == "AzireVPN" ]; then
-			airvpn_connected=$(curl -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
-			if [ "$airvpn_connected" -gt 0 ]; then
-    			airvpn_connected=1
-			fi
-		fi
-	
 		local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
 		local_inet=($local_inet)
 		local_ip=${local_inet[1]}
 		local_ip=${local_ip%/*}
 	
-		if [ "$airvpn_connected" -eq 0 ]; then
+		if [ "$connected" == "0" ]; then
 			ip=""
 		else
 			old_ip=""
@@ -274,13 +282,15 @@ function _updatestatus() {
         	typ="$line"
     	elif [ -z "$city" ]; then
         	city="$line"
+    	elif [ -z "$connected" ]; then
+        	connected="$line"
     	fi
 	done <<< "$ipinfo"
 
 	connection_file=$(cat "$DIR/.last_serverfile")
 	vpn_ip=$(cat "$DIR/$connection_file" | grep remote | head -n 1 | awk '{print $2}')
 
-	airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
+	# airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
 	
 	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
 	local_inet=($local_inet)
@@ -290,7 +300,7 @@ function _updatestatus() {
 	class="connected"
 	color="#ffffff"
 	home_ip=""
-	if [ "$airvpn_connected" -eq 0 ]; then
+	if [ "$connected" == "0" ]; then
 		connection_file="none"
 		vpn_ip=""
 		class="disconnected"
@@ -323,6 +333,7 @@ function _updatestatus() {
 \"file\":\"${connection_file}\",\
 \"type\":\"${typ}\",\
 \"city\":\"${city}\",\
+\"connected\":\"${connected}\",\
 \"text\":\"KS $ks_status LAN $lan_status $text VPN\",\
 \"messages\": [{\"label\": {\"text\":\"VPN ${class} - KS $ks_status - LAN $lan_status - $text\",\"color\":\"${color}\"},\"progress\":{\"value\":0}}],\
 \"tooltip\":\"ip: $text\ncity: ${city}\nkillswitch: ${ks_status}\",\
