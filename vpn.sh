@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROVIDER="AzireVPN"
+PROVIDER="AirVPN"
 DIR="/home/me/.vpn"
 DEFAULT_FILE="AirVPN_SG-Singapore_Lacaille_TCP-443-Entry3.ovpn"
 INTERFACE="eth0"
@@ -162,7 +162,7 @@ function _pokeIP() {
 	# fi
 
 	file_is_wireguard=1
-	if echo "$file" | greq -q ".ovpn"; then
+	if echo "$file" | grep -q ".ovpn"; then
 		file_is_wireguard=0
 	fi
 
@@ -179,6 +179,7 @@ function _pokeIP() {
 		ip_address="$domain_or_ip"
 	else
 		# TODO Poke hole in DNS
+		echo "TODO not yet implemented"
 	fi
 
 	if ! [ "$ip_address" == "" ]; then
