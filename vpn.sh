@@ -50,13 +50,13 @@ function _extractIPs() {
 
 function _killswitchOff() {
 
-	all_vpn_ips=""	
-	if [[ -f "$DIR/.killswitch_ips" ]]; then
-		all_vpn_ips=$(cat "$DIR/.killswitch_ips")
-	fi
-	if [ "$all_vpn_ips" == "" ]; then
-		echo "Can't find killswitch_ips. Not changing iptables"
-	else
+	# all_vpn_ips=""	
+	# if [[ -f "$DIR/.killswitch_ips" ]]; then
+	# 	all_vpn_ips=$(cat "$DIR/.killswitch_ips")
+	# fi
+	# if [ "$all_vpn_ips" == "" ]; then
+	# 	echo "Can't find killswitch_ips. Not changing iptables"
+	# else
 		iptables -P OUTPUT ACCEPT
 		iptables -D OUTPUT -o tun+ -j ACCEPT
 		iptables -D INPUT -i lo -j ACCEPT
@@ -67,8 +67,8 @@ function _killswitchOff() {
 		iptables -D OUTPUT -o br-+ -j ACCEPT
 		iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
 		iptables -D INPUT -s 255.255.255.255 -j ACCEPT
-		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
-		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+		# iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+		# iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
 		
 		ip6tables -P OUTPUT ACCEPT
 		ip6tables -D INPUT -i lo -j ACCEPT
@@ -78,24 +78,24 @@ function _killswitchOff() {
 		ip6tables -D OUTPUT -o docker+ -j ACCEPT
 		ip6tables -D OUTPUT -o br-+ -j ACCEPT
 		ip6tables -D OUTPUT -o tun+ -j ACCEPT
-	fi
+	# fi
 	
 }	
 
 function _killswitchOn() {
-	_extractIPs
-	all_vpn_ips=""
-	while IFS= read -r line; do
-		if ! [ "$all_vpn_ips" == "" ]; then
-			all_vpn_ips+=","
-		fi 
-		all_vpn_ips+="$line"
-	done < "$DIR/.vpnips"
+	# _extractIPs
+	# all_vpn_ips=""
+	# while IFS= read -r line; do
+	# 	if ! [ "$all_vpn_ips" == "" ]; then
+	# 		all_vpn_ips+=","
+	# 	fi 
+	# 	all_vpn_ips+="$line"
+	# done < "$DIR/.vpnips"
 
-	if [ "$all_vpn_ips" == "" ]; then
-		echo "No vpn ips found"
-		exit 1
-	fi
+	# if [ "$all_vpn_ips" == "" ]; then
+	# 	echo "No vpn ips found"
+	# 	exit 1
+	# fi
 
 	iptables -P OUTPUT DROP
 	iptables -A OUTPUT -o tun+ -j ACCEPT
@@ -107,8 +107,8 @@ function _killswitchOn() {
 	iptables -A OUTPUT -o br-+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
-	iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
-	iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
+	# iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $all_vpn_ips -j ACCEPT
+	# iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $all_vpn_ips -j ACCEPT
 	
 	ip6tables -P OUTPUT DROP
 	ip6tables -A INPUT -i lo -j ACCEPT
@@ -119,10 +119,10 @@ function _killswitchOn() {
 	ip6tables -A OUTPUT -o br-+ -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 	
-	echo "$all_vpn_ips" > $DIR/.killswitch_ips
-	if ! [[ $EUID -ne 0 ]]; then
-		chmod 666 $DIR/.killswitch_ips
-	fi
+	# echo "$all_vpn_ips" > $DIR/.killswitch_ips
+	# if ! [[ $EUID -ne 0 ]]; then
+	# 	chmod 666 $DIR/.killswitch_ips
+	# fi
 }
 
 
@@ -186,7 +186,7 @@ function _updateip() {
 
 	connected=$(echo "$ipinfo" | grep -i "AirVPN" | wc -l)
 	if [ "$PROVIDER" == "AzireVPN" ]; then
-		connected=$(curl -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
+		connected=$(curl --connect-timeout 5 -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
 		if [ "$connected" -gt 0 ]; then
     		connected=1
 		fi
@@ -289,8 +289,6 @@ function _updatestatus() {
 
 	connection_file=$(cat "$DIR/.last_serverfile")
 	vpn_ip=$(cat "$DIR/$connection_file" | grep remote | head -n 1 | awk '{print $2}')
-
-	# airvpn_connected=$(echo "$typ" | grep -i "AirVPN" | wc -l)
 	
 	local_inet=$(ip a | grep ${INTERFACE} | grep inet | xargs)
 	local_inet=($local_inet)
@@ -387,6 +385,9 @@ function _disconnect() {
 			rm $DIR/$WG_IFACE.conf
 		fi
 
+		echo "Unpoking hole in iptables..."
+		# TODO Unpoke hole in iptables
+
 		if [ "$called_from" == "disconnect" ]; then
 			sleep 3
 			_updateeverything
@@ -459,6 +460,9 @@ function connect() {
 		echo "Run vpn connect new to set a new server"
 		exit 1
 	fi
+
+	echo "Poking hole in iptables..."
+	# TODO Poke hole in iptables
 
 	echo "Connecting to $server_file..."
 
