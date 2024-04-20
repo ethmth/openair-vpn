@@ -137,7 +137,7 @@ function _pokeIP() {
 	else
 		iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $DNS_SERVER -j ACCEPT
 		iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $DNS_SERVER -j ACCEPT
-		ip_address=$(dig +short @$DNS_SERVER "$domain_or_ip")
+		ip_address=$(dig +short @$DNS_SERVER "$domain_or_ip" | head -1)
 		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $DNS_SERVER -j ACCEPT
 		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $DNS_SERVER -j ACCEPT
 	fi
