@@ -98,6 +98,23 @@ function _killswitchOn() {
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 }
 
+function _edit_wg_config() {
+	file=$1
+	ip_address=$2
+
+	file_is_wireguard=1
+	if echo "$file" | grep -q ".ovpn"; then
+		file_is_wireguard=0
+	fi
+
+	if ((file_is_wireguard)); then
+		domain_or_ip=$(cat $file | grep Endpoint | awk -F'[=:]' '{print $2}' | awk '{$1=$1};1')
+		if [ "$domain_or_ip" != "$ip_address" ]; then
+			sed -i "/^Endpoint = /s/=\s*[^:]*:/= $ip_address:/" $file
+		fi
+	fi
+}
+
 function _pokeIP() {
 	file=$1
 
@@ -123,7 +140,6 @@ function _pokeIP() {
 		ip_address=$(dig +short @$DNS_SERVER "$domain_or_ip")
 		iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $DNS_SERVER -j ACCEPT
 		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $DNS_SERVER -j ACCEPT
-		echo "DNS Resolved to $ip_address"
 	fi
 
 	if ! [ "$ip_address" == "" ]; then
@@ -134,6 +150,7 @@ function _pokeIP() {
 			chmod 666 $DIR/.poked_ips
 		fi
 	fi
+	echo "$ip_address"
 }
 
 function _unpokeIPs() {
@@ -491,7 +508,11 @@ function connect() {
 		exit 1
 	fi
 
-	_pokeIP "$DIR/$server_file"
+	poked_ip=$(_pokeIP "$DIR/$server_file")
+	if [ "$poked_ip" == "" ]; then
+		echo "Couldn't find IP in config file"
+		exit 1
+	fi
 
 	echo "Connecting to $server_file..."
 
@@ -500,6 +521,7 @@ function connect() {
 		openvpn --script-security 2 --up /etc/openvpn/update-resolv-conf --down /etc/openvpn/update-resolv-conf --down-pre --config $DIR/$server_file --daemon
 	else
 		cp $DIR/$server_file $DIR/$WG_IFACE.conf
+		_edit_wg_config "$DIR/$WG_IFACE.conf" "$poked_ip"
 		wg-quick up $DIR/$WG_IFACE.conf
 	fi
 
