@@ -34,21 +34,46 @@ function _checkroot() {
 	fi
 }
 
-function _extractIPs() {
-	ips=$(cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
-	wg_ips=$(cat $DIR/*.conf | grep "Endpoint" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
-
-	ips="$ips\n$wg_ips"
-	ips=$(echo -e "$ips" | sort | uniq)
-
-	echo "$ips" > $DIR/.vpnips
-
-	if ! [[ $EUID -ne 0 ]]; then
-		chmod 666 $DIR/.vpnips
-	fi
+function is_ip() {
+    local ip=$1
+    if [[ $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        IFS='.' read -r -a octets <<< "$ip"
+        for octet in "${octets[@]}"; do
+            if (( octet < 0 || octet > 255 )); then
+                return 1
+            fi
+        done
+        return 0
+    else
+        return 1
+    fi
 }
 
+# function is_domain() {
+#     local domain=$1
+#     if [[ $domain =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
+#         return 0
+#     else
+#         return 1
+#     fi
+# }
+
+# function _extractIPs() {
+# 	ips=$(cat $DIR/*.ovpn | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
+# 	wg_ips=$(cat $DIR/*.conf | grep "Endpoint" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
+
+# 	ips="$ips\n$wg_ips"
+# 	ips=$(echo -e "$ips" | sort | uniq)
+
+# 	echo "$ips" > $DIR/.vpnips
+
+# 	if ! [[ $EUID -ne 0 ]]; then
+# 		chmod 666 $DIR/.vpnips
+# 	fi
+# }
+
 function _killswitchOff() {
+	# _unpokeIPs
 
 	# all_vpn_ips=""	
 	# if [[ -f "$DIR/.killswitch_ips" ]]; then
@@ -123,6 +148,67 @@ function _killswitchOn() {
 	# if ! [[ $EUID -ne 0 ]]; then
 	# 	chmod 666 $DIR/.killswitch_ips
 	# fi
+}
+
+function _pokeIP() {
+	file=$1
+
+	# ks_status=""	
+	# if [[ -f "$DIR/.killswitch_status" ]]; then
+	# 	ks_status=$(cat "$DIR/.killswitch_status")
+	# fi
+	# if ! [ "$ks_status" == "on" ]; then
+	# 	return 0
+	# fi
+
+	file_is_wireguard=1
+	if echo "$file" | greq -q ".ovpn"; then
+		file_is_wireguard=0
+	fi
+
+	domain_or_ip=""
+	if ((file_is_wireguard)); then
+		domain_or_ip=$(cat $file | grep Endpoint | awk -F'[=:]' '{print $2}' | awk '{$1=$1};1')
+	else
+		domain_or_ip=$(cat $file | grep remote | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort | uniq)
+	fi
+	is_ip_address=$(is_ip "$domain_or_ip")
+
+	ip_address=""
+	if ((is_ip_address)); then
+		ip_address="$domain_or_ip"
+	else
+		# TODO Poke hole in DNS
+	fi
+
+	if ! [ "$ip_address" == "" ]; then
+		iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $ip_address -j ACCEPT
+		iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $ip_address -j ACCEPT
+		echo "$ip_address" >> $DIR/.poked_ips
+		if ! [[ $EUID -ne 0 ]]; then
+			chmod 666 $DIR/.poked_ips
+		fi
+	fi
+}
+
+function _unpokeIPs() {
+	while IFS= read -r line; do
+		is_ip_address=$(is_ip "$line")
+		ip_address=""
+		if ((is_ip_address)); then
+			ip_address="$line"
+		fi
+		if ! [ "$ip_address" == "" ]; then
+			iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $ip_address -j ACCEPT
+			iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $ip_address -j ACCEPT
+		fi
+	done < "$DIR/.poked_ips"
+
+	echo "" > $DIR/.poked_ips
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.poked_ips
+	fi
+
 }
 
 
@@ -385,8 +471,7 @@ function _disconnect() {
 			rm $DIR/$WG_IFACE.conf
 		fi
 
-		echo "Unpoking hole in iptables..."
-		# TODO Unpoke hole in iptables
+		_unpokeIPs
 
 		if [ "$called_from" == "disconnect" ]; then
 			sleep 3
@@ -461,8 +546,7 @@ function connect() {
 		exit 1
 	fi
 
-	echo "Poking hole in iptables..."
-	# TODO Poke hole in iptables
+	_pokeIP "$DIR/$server_file"
 
 	echo "Connecting to $server_file..."
 
@@ -480,7 +564,7 @@ function connect() {
 		chmod 666 $DIR/.last_serverfile
 	fi
 
-	sleep 4
+	sleep 3
 	_updateeverything
 }
 
