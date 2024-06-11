@@ -142,7 +142,8 @@ function _pokeIP() {
 		iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $DNS_SERVER -j ACCEPT
 	fi
 
-	if ! [ "$ip_address" == "" ]; then
+	is_ip_address=$(is_ip "$ip_address")
+	if ((is_ip_address)); then
 		iptables -A OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $ip_address -j ACCEPT
 		iptables -A OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $ip_address -j ACCEPT
 		echo "$ip_address" >> $DIR/.poked_ips
@@ -156,11 +157,8 @@ function _pokeIP() {
 function _unpokeIPs() {
 	while IFS= read -r line; do
 		is_ip_address=$(is_ip "$line")
-		ip_address=""
 		if ((is_ip_address)); then
 			ip_address="$line"
-		fi
-		if ! [ "$ip_address" == "" ]; then
 			iptables -D OUTPUT -o $INTERFACE -p udp -m multiport --dports 53,443,1637,51820,1300:1302,1194:1197 -d $ip_address -j ACCEPT
 			iptables -D OUTPUT -o $INTERFACE -p tcp -m multiport --dports 53,443 -d $ip_address -j ACCEPT
 		fi
