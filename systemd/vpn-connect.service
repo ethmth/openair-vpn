@@ -2,11 +2,10 @@
 Description=Run VPN init-connect at boot
 After=network-online.target vpn-killswitch.service
 Wants=network-online.target vpn-killswitch.service
-Before=libvirtd.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/vpn init-connect
 
 [Install]
-WantedBy=multi-user.target libvirtd.service
+WantedBy=multi-user.target
