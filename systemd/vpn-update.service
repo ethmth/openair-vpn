@@ -1,0 +1,6 @@
+[Unit]
+Description=Run VPN update
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/vpn update

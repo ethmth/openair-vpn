@@ -1,0 +1,12 @@
+[Unit]
+Description=Run VPN init at boot
+After=network-online.target
+Wants=network-online.target
+Before=libvirtd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/vpn init
+
+[Install]
+WantedBy=multi-user.target libvirtd.service
