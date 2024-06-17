@@ -669,12 +669,12 @@ function init_killswitch() {
 	killswitch on
 }
 
-function init_lan() {
+function init_connect() {
+	connect
 	lan $LAN_DEFAULT
 }
 
-function init_connect() {
-	connect
+function init_check() {
 	while ! check_internet_connectivity; do
   		echo "No internet connectivity. Waiting..."
   		sleep 1
@@ -707,10 +707,10 @@ elif [ "$1" == "init" ]; then
 	init ${@:2:$#-1}
 elif [ "$1" == "init-killswitch" ]; then
 	init_killswitch ${@:2:$#-1}
-elif [ "$1" == "init-lan" ]; then
-	init_lan ${@:2:$#-1}
 elif [ "$1" == "init-connect" ]; then
 	init_connect ${@:2:$#-1}
+elif [ "$1" == "init-check" ]; then
+	init_check ${@:2:$#-1}
 else 
 	printf "Options \n"
 	printf	"\t check\n"
@@ -722,7 +722,7 @@ else
 	printf	"\t update\n"
 	printf	"\t init\n"
 	printf	"\t init-killswitch\n"
-	printf	"\t init-lan\n"
 	printf	"\t init-connect\n"
+	printf	"\t init-check\n"
 	exit 0
 fi

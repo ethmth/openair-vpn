@@ -1,0 +1,10 @@
+[Unit]
+Description=Run VPN init-killswitch at boot
+Before=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/vpn init-killswitch
+
+[Install]
+WantedBy=multi-user.target network.target

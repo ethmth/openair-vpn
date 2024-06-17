@@ -1,0 +1,11 @@
+[Unit]
+Description=Run VPN init-check at boot
+After=vpn-connect.service
+Wants=vpn-connect.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/vpn init-check
+
+[Install]
+WantedBy=multi-user.target

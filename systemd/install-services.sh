@@ -7,8 +7,18 @@ fi
 
 CUR_USER=$(whoami)
 
-if ! [ -f "vpn-init.service" ]; then
-	echo "vpn-init.service doesn't exist."
+if ! [ -f "vpn-check.service" ]; then
+	echo "vpn-check.service doesn't exist."
+	exit 1
+fi
+
+if ! [ -f "vpn-connect.service" ]; then
+	echo "vpn-connect.service doesn't exist."
+	exit 1
+fi
+
+if ! [ -f "vpn-killswitch.service" ]; then
+	echo "vpn-killswitch.service doesn't exist."
 	exit 1
 fi
 
@@ -22,10 +32,16 @@ if ! [ -f "vpn-update.timer" ]; then
 	exit 1
 fi
 
-cp vpn-init.service /etc/systemd/system/vpn-init.service
+cp vpn-check.service /etc/systemd/system/vpn-check.service
+cp vpn-connect.service /etc/systemd/system/vpn-connect.service
+cp vpn-killswitch.service /etc/systemd/system/vpn-killswitch.service
+
 cp vpn-update.service /etc/systemd/system/vpn-update.service
 cp vpn-update.timer /etc/systemd/system/vpn-update.timer
 
-systemctl enable vpn-init.service
+systemctl enable vpn-check.service
+systemctl enable vpn-connect.service
+systemctl enable vpn-killswitch.service
+
 systemctl enable vpn-update.timer
 

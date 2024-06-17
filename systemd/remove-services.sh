@@ -7,11 +7,22 @@ fi
 
 CUR_USER=$(whoami)
 
-systemctl disable vpn-init.service
+systemctl disable vpn-check.service
+systemctl disable vpn-connect.service
+systemctl disable vpn-killswitch.service
+
 systemctl disable vpn-update.timer
 
-if [ -f "/etc/systemd/system/vpn-init.service" ]; then
-	rm /etc/systemd/system/vpn-init.service
+if [ -f "/etc/systemd/system/vpn-check.service" ]; then
+	rm /etc/systemd/system/vpn-check.service
+fi
+
+if [ -f "/etc/systemd/system/vpn-connect.service" ]; then
+	rm /etc/systemd/system/vpn-connect.service
+fi
+
+if [ -f "/etc/systemd/system/vpn-killswitch.service" ]; then
+	rm /etc/systemd/system/vpn-killswitch.service
 fi
 
 if [ -f "/etc/systemd/system/vpn-update.service" ]; then
