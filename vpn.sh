@@ -65,6 +65,10 @@ function _killswitchOff() {
 	iptables -D OUTPUT -o br-+ -j ACCEPT
 	iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
+
+	iptables -P FORWARD ACCEPT
+	iptables -D FORWARD -i tun+ -o virbr+ -j ACCEPT
+	iptables -D FORWARD -i virbr+ -o tun+ -j ACCEPT
 	
 	ip6tables -P OUTPUT ACCEPT
 	ip6tables -D INPUT -i lo -j ACCEPT
@@ -74,6 +78,10 @@ function _killswitchOff() {
 	ip6tables -D OUTPUT -o docker+ -j ACCEPT
 	ip6tables -D OUTPUT -o br-+ -j ACCEPT
 	ip6tables -D OUTPUT -o tun+ -j ACCEPT
+
+	ip6tables -P FORWARD ACCEPT
+	ip6tables -D FORWARD -i tun+ -o virbr+ -j ACCEPT
+	ip6tables -D FORWARD -i virbr+ -o tun+ -j ACCEPT
 }	
 
 function _killswitchOn() {
@@ -87,6 +95,10 @@ function _killswitchOn() {
 	iptables -A OUTPUT -o br-+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
+
+	iptables -P FORWARD DROP
+	iptables -A FORWARD -i tun+ -o virbr+ -j ACCEPT
+	iptables -A FORWARD -i virbr+ -o tun+ -j ACCEPT
 	
 	ip6tables -P OUTPUT DROP
 	ip6tables -A INPUT -i lo -j ACCEPT
@@ -96,6 +108,10 @@ function _killswitchOn() {
 	ip6tables -A OUTPUT -o docker+ -j ACCEPT
 	ip6tables -A OUTPUT -o br-+ -j ACCEPT
 	ip6tables -A OUTPUT -o tun+ -j ACCEPT
+
+	ip6tables -P FORWARD DROP
+	ip6tables -A FORWARD -i tun+ -o virbr+ -j ACCEPT
+	ip6tables -A FORWARD -i virbr+ -o tun+ -j ACCEPT
 }
 
 function _edit_wg_config() {
