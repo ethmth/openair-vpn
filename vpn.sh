@@ -432,13 +432,6 @@ function _disconnect() {
 		fi
 
 		_unpokeIPs
-
-		if [ "$called_from" == "disconnect" ]; then
-			sleep 1
-			_updateeverything
-		# elif [ "$called_from" == "connect" ]; then
-			# sleep 1
-		fi
 	fi
 
 	openvpn_on=$(ps -A | grep openvpn | wc -l)
@@ -528,9 +521,6 @@ function connect() {
 		echo "$server_file" > $DIR/.last_serverfile
 		chmod 666 $DIR/.last_serverfile
 	fi
-
-	sleep 2
-	_updateeverything
 }
 
 function disconnect() {
@@ -589,9 +579,6 @@ function killswitch() {
 		echo "Usage: vpn killswitch <on|off>"
 		exit 1
 	fi	
-	
-	sleep 1		
-	_updateeverything
 }
 
 function lan() {
@@ -645,7 +632,6 @@ function lan() {
 		echo "Usage: vpn lan <on|off>"
 		exit 1
 	fi
-	_updatestatus
 }
 
 function reset() {
@@ -678,22 +664,53 @@ function init() {
     _updateeverything
 }
 
+function init_killswitch() {
+	reset
+	killswitch on
+}
+
+function init_lan() {
+	lan $LAN_DEFAULT
+}
+
+function init_connect() {
+	connect
+	while ! check_internet_connectivity; do
+  		echo "No internet connectivity. Waiting..."
+  		sleep 1
+	done
+    _updateeverything
+}
+
 if [ "$1" == "check" ]; then
 	check ${@:2:$#-1}
 elif ([ "$1" == "connect" ] || [ "$1" == "on" ]); then
 	connect ${@:2:$#-1}
+	sleep 2
+	_updateeverything
 elif ([ "$1" == "disconnect" ] || [ "$1" == "off" ]); then
 	disconnect ${@:2:$#-1}
+	sleep 1
+	_updateeverything
 elif ([ "$1" == "killswitch" ] || [ "$1" == "ks" ]); then
 	killswitch ${@:2:$#-1}
+	sleep 1
+	_updateeverything
 elif [ "$1" == "lan" ]; then
 	lan ${@:2:$#-1}
+	_updatestatus
 elif [ "$1" == "reset" ]; then
 	reset ${@:2:$#-1}
 elif [ "$1" == "update" ]; then
 	update ${@:2:$#-1}
 elif [ "$1" == "init" ]; then
 	init ${@:2:$#-1}
+elif [ "$1" == "init-killswitch" ]; then
+	init_killswitch ${@:2:$#-1}
+elif [ "$1" == "init-lan" ]; then
+	init_lan ${@:2:$#-1}
+elif [ "$1" == "init-connect" ]; then
+	init_connect ${@:2:$#-1}
 else 
 	printf "Options \n"
 	printf	"\t check\n"
@@ -704,5 +721,8 @@ else
 	printf	"\t reset\n"
 	printf	"\t update\n"
 	printf	"\t init\n"
+	printf	"\t init-killswitch\n"
+	printf	"\t init-lan\n"
+	printf	"\t init-connect\n"
 	exit 0
 fi
