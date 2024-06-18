@@ -55,14 +55,14 @@ function is_ip() {
 
 
 function _killswitchOff() {
-	iptables -P INPUT ACCEPT
-	iptables -D INPUT -i tun+ -j ACCEPT
-	iptables -D INPUT -i lo -j ACCEPT
-	iptables -D INPUT -i virbr+ -j ACCEPT
-	iptables -D INPUT -i vnet+ -j ACCEPT
-	iptables -D INPUT -i docker+ -j ACCEPT
-	iptables -D INPUT -i br-+ -j ACCEPT
-	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
+	# iptables -P INPUT ACCEPT
+	# iptables -D INPUT -i tun+ -j ACCEPT
+	# iptables -D INPUT -i lo -j ACCEPT
+	# iptables -D INPUT -i virbr+ -j ACCEPT
+	# iptables -D INPUT -i vnet+ -j ACCEPT
+	# iptables -D INPUT -i docker+ -j ACCEPT
+	# iptables -D INPUT -i br-+ -j ACCEPT
+	# iptables -D INPUT -s 255.255.255.255 -j ACCEPT
 
 	iptables -P OUTPUT ACCEPT
 	iptables -D OUTPUT -o tun+ -j ACCEPT
@@ -93,14 +93,14 @@ function _killswitchOff() {
 }	
 
 function _killswitchOn() {
-	iptables -P INPUT DROP
-	iptables -A INPUT -i tun+ -j ACCEPT
-	iptables -A INPUT -i lo -j ACCEPT
-	iptables -A INPUT -i virbr+ -j ACCEPT
-	iptables -A INPUT -i vnet+ -j ACCEPT
-	iptables -A INPUT -i docker+ -j ACCEPT
-	iptables -A INPUT -i br-+ -j ACCEPT
-	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
+	# iptables -P INPUT DROP
+	# iptables -A INPUT -i tun+ -j ACCEPT
+	# iptables -A INPUT -i lo -j ACCEPT
+	# iptables -A INPUT -i virbr+ -j ACCEPT
+	# iptables -A INPUT -i vnet+ -j ACCEPT
+	# iptables -A INPUT -i docker+ -j ACCEPT
+	# iptables -A INPUT -i br-+ -j ACCEPT
+	# iptables -A INPUT -s 255.255.255.255 -j ACCEPT
 
 	iptables -P OUTPUT DROP
 	iptables -A OUTPUT -o tun+ -j ACCEPT
