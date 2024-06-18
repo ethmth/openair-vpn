@@ -60,32 +60,40 @@ function _killswitchOff() {
 	iptables -D INPUT -i lo -j ACCEPT
 	iptables -D OUTPUT -o lo -j ACCEPT
 	iptables -D OUTPUT -o virbr+ -j ACCEPT
-	iptables -D OUTPUT -o vmnet+ -j ACCEPT
+	iptables -D OUTPUT -o vnet+ -j ACCEPT
+	# iptables -D OUTPUT -o vmnet+ -j ACCEPT
 	iptables -D OUTPUT -o docker+ -j ACCEPT
 	iptables -D OUTPUT -o br-+ -j ACCEPT
 	iptables -D OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
-	iptables -D INPUT -i virbr+ -p icmp -j ACCEPT
-	iptables -D OUTPUT -o virbr+ -p icmp -j ACCEPT
+	# iptables -D INPUT -i virbr+ -p icmp -j ACCEPT
+	# iptables -D OUTPUT -o virbr+ -p icmp -j ACCEPT
 
 	iptables -P FORWARD ACCEPT
 	iptables -D FORWARD -i tun+ -o virbr+ -j ACCEPT
 	iptables -D FORWARD -i virbr+ -o tun+ -j ACCEPT
 	iptables -D FORWARD -i virbr+ -o virbr+ -j ACCEPT
+	iptables -D FORWARD -i vnet+ -o vnet+ -j ACCEPT
+	iptables -D FORWARD -i virbr+ -o vnet+ -j ACCEPT
+	iptables -D FORWARD -i vnet+ -o virbr+ -j ACCEPT
 	
 	ip6tables -P OUTPUT ACCEPT
+	ip6tables -D OUTPUT -o tun+ -j ACCEPT
 	ip6tables -D INPUT -i lo -j ACCEPT
 	ip6tables -D OUTPUT -o lo -j ACCEPT
 	ip6tables -D OUTPUT -o virbr+ -j ACCEPT
-	ip6tables -D OUTPUT -o vmnet+ -j ACCEPT
+	ip6tables -D OUTPUT -o vnet+ -j ACCEPT
+	# ip6tables -D OUTPUT -o vmnet+ -j ACCEPT
 	ip6tables -D OUTPUT -o docker+ -j ACCEPT
 	ip6tables -D OUTPUT -o br-+ -j ACCEPT
-	ip6tables -D OUTPUT -o tun+ -j ACCEPT
 
 	ip6tables -P FORWARD ACCEPT
 	ip6tables -D FORWARD -i tun+ -o virbr+ -j ACCEPT
 	ip6tables -D FORWARD -i virbr+ -o tun+ -j ACCEPT
 	ip6tables -D FORWARD -i virbr+ -o virbr+ -j ACCEPT
+	ip6tables -D FORWARD -i vnet+ -o vnet+ -j ACCEPT
+	ip6tables -D FORWARD -i virbr+ -o vnet+ -j ACCEPT
+	ip6tables -D FORWARD -i vnet+ -o virbr+ -j ACCEPT
 }	
 
 function _killswitchOn() {
@@ -94,32 +102,40 @@ function _killswitchOn() {
 	iptables -A INPUT -i lo -j ACCEPT
 	iptables -A OUTPUT -o lo -j ACCEPT
 	iptables -A OUTPUT -o virbr+ -j ACCEPT
-    iptables -A OUTPUT -o vmnet+ -j ACCEPT
+	iptables -A OUTPUT -o vnet+ -j ACCEPT
+	# iptables -A OUTPUT -o vmnet+ -j ACCEPT
 	iptables -A OUTPUT -o docker+ -j ACCEPT
 	iptables -A OUTPUT -o br-+ -j ACCEPT
 	iptables -A OUTPUT -d 255.255.255.255 -j ACCEPT
 	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
-	iptables -A INPUT -i virbr+ -p icmp -j ACCEPT
-	iptables -A OUTPUT -o virbr+ -p icmp -j ACCEPT
+	# iptables -A INPUT -i virbr+ -p icmp -j ACCEPT
+	# iptables -A OUTPUT -o virbr+ -p icmp -j ACCEPT
 
 	iptables -P FORWARD DROP
 	iptables -A FORWARD -i tun+ -o virbr+ -j ACCEPT
 	iptables -A FORWARD -i virbr+ -o tun+ -j ACCEPT
 	iptables -A FORWARD -i virbr+ -o virbr+ -j ACCEPT
+	iptables -A FORWARD -i vnet+ -o vnet+ -j ACCEPT
+	iptables -A FORWARD -i virbr+ -o vnet+ -j ACCEPT
+	iptables -A FORWARD -i vnet+ -o virbr+ -j ACCEPT
 
 	ip6tables -P OUTPUT DROP
+	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 	ip6tables -A INPUT -i lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o virbr+ -j ACCEPT
-    ip6tables -A OUTPUT -o vmnet+ -j ACCEPT
+	ip6tables -A OUTPUT -o vnet+ -j ACCEPT
+	# ip6tables -A OUTPUT -o vmnet+ -j ACCEPT
 	ip6tables -A OUTPUT -o docker+ -j ACCEPT
 	ip6tables -A OUTPUT -o br-+ -j ACCEPT
-	ip6tables -A OUTPUT -o tun+ -j ACCEPT
 
 	ip6tables -P FORWARD DROP
 	ip6tables -A FORWARD -i tun+ -o virbr+ -j ACCEPT
 	ip6tables -A FORWARD -i virbr+ -o tun+ -j ACCEPT
 	ip6tables -A FORWARD -i virbr+ -o virbr+ -j ACCEPT
+	ip6tables -A FORWARD -i vnet+ -o vnet+ -j ACCEPT
+	ip6tables -A FORWARD -i virbr+ -o vnet+ -j ACCEPT
+	ip6tables -A FORWARD -i vnet+ -o virbr+ -j ACCEPT
 }
 
 function _edit_wg_config() {
