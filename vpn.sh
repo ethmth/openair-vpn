@@ -257,18 +257,20 @@ function _updateeverything() {
 function _updateip() {
 	if [ "$PROVIDER" == "AirVPN" ]; then
 		ipinfo=$(curl --connect-timeout 5 https://ipleak.net/json/ 2>/dev/null | jq -r '.ip, .type, .city_name')
+	elif [ "$PROVIDER" == "AzireVPN" ]; then
+		ipinfo=$(curl --connect-timeout 5 https://v4.api.azirevpn.com/v3/check 2>/dev/null | jq -r '.data.ip, .data.connected, .data.geo.city' | sed -e 's/true/AzireVPN/')
 	else
 		ipinfo=$(curl --connect-timeout 5 https://ipinfo.io/json 2>/dev/null | jq -r '.ip, .org, .city')
 	fi
 	curl_exit_status=$?
 
-	connected=$(echo "$ipinfo" | grep -i "AirVPN" | wc -l)
-	if [ "$PROVIDER" == "AzireVPN" ]; then
-		connected=$(curl --connect-timeout 5 -s https://www.azirevpn.com/check | grep "You are connected" | wc -l)
-		if [ "$connected" -gt 0 ]; then
-    		connected=1
-		fi
-	fi
+	connected=$(echo "$ipinfo" | grep -i "$PROVIDER" | wc -l)
+	# if [ "$PROVIDER" == "AzireVPN" ]; then
+	# 	connected=$(curl --connect-timeout 5 -s https://v4.api.azirevpn.com/v3/check | grep '"connected": true' | wc -l)
+	# 	if [ "$connected" -gt 0 ]; then
+    # 		connected=1
+	# 	fi
+	# fi
 
 	ipinfo="${ipinfo}"$'\n'"${connected}"
 
