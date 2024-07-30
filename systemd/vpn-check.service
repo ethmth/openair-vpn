@@ -5,7 +5,7 @@ Wants=vpn-connect.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/vpn init-check
+ExecStart=/usr/local/bin/vpn init-check
 
 [Install]
 WantedBy=multi-user.target

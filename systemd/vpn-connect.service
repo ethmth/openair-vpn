@@ -5,7 +5,7 @@ Wants=network-online.target vpn-killswitch.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/vpn init-connect
+ExecStart=/usr/local/bin/vpn init-connect
 
 [Install]
 WantedBy=multi-user.target

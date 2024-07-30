@@ -3,4 +3,4 @@ Description=Run VPN update
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/vpn update
+ExecStart=/usr/local/bin/vpn update

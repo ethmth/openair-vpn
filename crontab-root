@@ -1,2 +1,2 @@
-@reboot /usr/bin/vpn init
-*/5 * * * * /usr/bin/vpn update
+@reboot /usr/local/bin/vpn init
+*/5 * * * * /usr/local/bin/vpn update
