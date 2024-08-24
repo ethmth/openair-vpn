@@ -14,6 +14,8 @@ HOST_TO_PING="1.1.1.1"
 DNS_SERVER="1.1.1.1"
 WG_IFACE="tun0"
 
+INCOMING_PORTS="22,1714:1764"
+
 function has_local_ip() {
   local_ip=$(ip addr show "$INTERFACE" | grep -oP 'inet\s+\K[\d.]+')
   if [[ "$local_ip" =~ ^192\.168\. || "$local_ip" =~ ^10\. || "$local_ip" =~ ^172\.16\. ]]; then
@@ -235,7 +237,9 @@ function _tablesRemoveLAN() {
 	iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
 	iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
 	iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
-	iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	# iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
 }
 
 function _tablesAddLAN() {
@@ -246,7 +250,9 @@ function _tablesAddLAN() {
 	iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
 	iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 	iptables -A OUTPUT -d $local_subnet -j ACCEPT
-	iptables -A INPUT -s $local_subnet -j ACCEPT
+	iptables -A INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -A INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	# iptables -A INPUT -s $local_subnet -j ACCEPT
 }
 
 function _updateeverything() {
