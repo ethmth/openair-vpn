@@ -237,9 +237,9 @@ function _tablesRemoveLAN() {
 	iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
 	iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
 	iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
-	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	# iptables -D INPUT -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -s $local_subnet -j DROP 2>/dev/null
 }
 
 function _tablesAddLAN() {
@@ -252,7 +252,7 @@ function _tablesAddLAN() {
 	iptables -A OUTPUT -d $local_subnet -j ACCEPT
 	iptables -A INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
 	iptables -A INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	# iptables -A INPUT -s $local_subnet -j ACCEPT
+	iptables -A INPUT -s $local_subnet -j DROP
 }
 
 function _updateeverything() {
