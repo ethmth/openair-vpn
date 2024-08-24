@@ -716,6 +716,38 @@ function init_check() {
     _updateeverything
 }
 
+function firewall() {
+
+	_checkroot
+	
+	if [ "$1" == "add" ]; then
+		if [ -z "$2" ]; then
+			echo "No port specified to add."
+			exit 1
+		fi
+
+		if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+			echo "Port specified is not a number."
+			exit 1
+		fi
+
+		echo "$2" >> $DIR/.firewall_ports
+		firewall_ports=$(cat "$DIR/.firewall_ports" | uniq | sort)
+		echo "$firewall_ports" > $DIR/.firewall_ports
+
+		_firewall_update
+
+	elif [ "$1" == "remove" ]; then
+
+	elif [ "$1" == "on" ]; then
+
+	elif [ "$1" == "off" ]; then
+
+	else
+
+	fi
+}
+
 if [ "$1" == "check" ]; then
 	check ${@:2:$#-1}
 elif ([ "$1" == "connect" ] || [ "$1" == "on" ]); then
@@ -745,6 +777,8 @@ elif [ "$1" == "init-connect" ]; then
 	init_connect ${@:2:$#-1}
 elif [ "$1" == "init-check" ]; then
 	init_check ${@:2:$#-1}
+elif ([ "$1" == "firewall" ] || [ "$1" == "fw" ]); then
+	firewall ${@:2:$#-1}
 else 
 	printf "Options \n"
 	printf	"\t check\n"
