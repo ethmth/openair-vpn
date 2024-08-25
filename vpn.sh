@@ -57,14 +57,16 @@ function is_ip() {
 
 
 function _killswitchOff() {
-	# iptables -P INPUT ACCEPT
-	# iptables -D INPUT -i tun+ -j ACCEPT
-	# iptables -D INPUT -i lo -j ACCEPT
-	# iptables -D INPUT -i virbr+ -j ACCEPT
-	# iptables -D INPUT -i vnet+ -j ACCEPT
-	# iptables -D INPUT -i docker+ -j ACCEPT
-	# iptables -D INPUT -i br-+ -j ACCEPT
-	# iptables -D INPUT -s 255.255.255.255 -j ACCEPT
+	iptables -P INPUT ACCEPT
+	iptables -D INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	iptables -D INPUT -i tun+ -j ACCEPT
+	iptables -D INPUT -i lo -j ACCEPT
+	iptables -D INPUT -i virbr+ -j ACCEPT
+	iptables -D INPUT -i vnet+ -j ACCEPT
+	iptables -D INPUT -i docker+ -j ACCEPT
+	iptables -D INPUT -i br-+ -j ACCEPT
+	iptables -D INPUT -s 255.255.255.255 -j ACCEPT
+	iptables -D INPUT -p icmp --icmp-type 8 -m conntrack --ctstate NEW -j ACCEPT
 
 	iptables -P OUTPUT ACCEPT
 	iptables -D OUTPUT -o tun+ -j ACCEPT
@@ -95,14 +97,16 @@ function _killswitchOff() {
 }	
 
 function _killswitchOn() {
-	# iptables -P INPUT DROP
-	# iptables -A INPUT -i tun+ -j ACCEPT
-	# iptables -A INPUT -i lo -j ACCEPT
-	# iptables -A INPUT -i virbr+ -j ACCEPT
-	# iptables -A INPUT -i vnet+ -j ACCEPT
-	# iptables -A INPUT -i docker+ -j ACCEPT
-	# iptables -A INPUT -i br-+ -j ACCEPT
-	# iptables -A INPUT -s 255.255.255.255 -j ACCEPT
+	iptables -P INPUT DROP
+	iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	iptables -A INPUT -i tun+ -j ACCEPT
+	iptables -A INPUT -i lo -j ACCEPT
+	iptables -A INPUT -i virbr+ -j ACCEPT
+	iptables -A INPUT -i vnet+ -j ACCEPT
+	iptables -A INPUT -i docker+ -j ACCEPT
+	iptables -A INPUT -i br-+ -j ACCEPT
+	iptables -A INPUT -s 255.255.255.255 -j ACCEPT
+	iptables -A INPUT -p icmp --icmp-type 8 -m conntrack --ctstate NEW -j ACCEPT
 
 	iptables -P OUTPUT DROP
 	iptables -A OUTPUT -o tun+ -j ACCEPT
@@ -232,23 +236,14 @@ function _postVPNDNS() {
 function _tablesRemoveLAN() {	
     local_subnet=$(/usr/bin/ip route | grep "$INTERFACE" | grep "/" | cut -d ' ' -f 1)
 
-	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
-	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
-	iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
-	iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
-	iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
-	iptables -D INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-	iptables -D INPUT -i lo -j ACCEPT
-	iptables -D INPUT -m conntrack --ctstate INVALID -j DROP
-	iptables -D INPUT -p icmp --icmp-type 8 -m conntrack --ctstate NEW -j ACCEPT
-	# iptables -D INPUT -p udp -m conntrack --ctstate NEW -j UDP
-	# iptables -D INPUT -p tcp --syn -m conntrack --ctstate NEW -j TCP
+	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
+	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+	iptables -D OUTPUT -d $local_subnet -j ACCEPT
+
+	iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP
+	iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
 	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -D INPUT -p udp -j REJECT --reject-with icmp-port-unreachable
-	iptables -D INPUT -p tcp -j REJECT --reject-with tcp-reset
-	iptables -D INPUT -j REJECT --reject-with icmp-proto-unreachable
-	iptables -D INPUT -s $local_subnet -j DROP 2>/dev/null
 }
 
 function _tablesAddLAN() {
@@ -256,21 +251,12 @@ function _tablesAddLAN() {
 
 	iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
 	iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
+	iptables -A OUTPUT -d $local_subnet -j ACCEPT
+
 	iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
 	iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
-	iptables -A OUTPUT -d $local_subnet -j ACCEPT
-	iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-	iptables -A INPUT -i lo -j ACCEPT
-	iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
-	iptables -A INPUT -p icmp --icmp-type 8 -m conntrack --ctstate NEW -j ACCEPT
-	# iptables -A INPUT -p udp -m conntrack --ctstate NEW -j UDP
-	# iptables -A INPUT -p tcp --syn -m conntrack --ctstate NEW -j TCP
 	iptables -A INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
 	iptables -A INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -A INPUT -p udp -j REJECT --reject-with icmp-port-unreachable
-	iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset
-	iptables -A INPUT -j REJECT --reject-with icmp-proto-unreachable
-	iptables -A INPUT -s $local_subnet -j DROP
 }
 
 function _updateeverything() {
