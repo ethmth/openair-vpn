@@ -237,8 +237,17 @@ function _tablesRemoveLAN() {
 	iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
 	iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
 	iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
-	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
-	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	iptables -D INPUT -i lo -j ACCEPT
+	iptables -D INPUT -m conntrack --ctstate INVALID -j DROP
+	iptables -D INPUT -p icmp --icmp-type 8 -m conntrack --ctstate NEW -j ACCEPT
+	# iptables -D INPUT -p udp -m conntrack --ctstate NEW -j UDP
+	# iptables -D INPUT -p tcp --syn -m conntrack --ctstate NEW -j TCP
+	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -D INPUT -p udp -j REJECT --reject-with icmp-port-unreachable
+	iptables -D INPUT -p tcp -j REJECT --reject-with tcp-reset
+	iptables -D INPUT -j REJECT --reject-with icmp-proto-unreachable
 	iptables -D INPUT -s $local_subnet -j DROP 2>/dev/null
 }
 
@@ -250,8 +259,17 @@ function _tablesAddLAN() {
 	iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
 	iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 	iptables -A OUTPUT -d $local_subnet -j ACCEPT
+	iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	iptables -A INPUT -i lo -j ACCEPT
+	iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+	iptables -A INPUT -p icmp --icmp-type 8 -m conntrack --ctstate NEW -j ACCEPT
+	# iptables -A INPUT -p udp -m conntrack --ctstate NEW -j UDP
+	# iptables -A INPUT -p tcp --syn -m conntrack --ctstate NEW -j TCP
 	iptables -A INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
 	iptables -A INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -A INPUT -p udp -j REJECT --reject-with icmp-port-unreachable
+	iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset
+	iptables -A INPUT -j REJECT --reject-with icmp-proto-unreachable
 	iptables -A INPUT -s $local_subnet -j DROP
 }
 
