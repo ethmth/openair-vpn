@@ -66,9 +66,9 @@ function _firewallOn() {
 function _firewallOff() {
 	local_subnet=$(/usr/bin/ip route | grep "$INTERFACE" | grep "/" | cut -d ' ' -f 1)
 	
-	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -D INPUT -s $local_subnet -j DROP
+	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -s $local_subnet -j DROP 2>/dev/null
 }
 
 
@@ -257,12 +257,12 @@ function _postVPNDNS() {
 function _tablesRemoveLAN() {	
     local_subnet=$(/usr/bin/ip route | grep "$INTERFACE" | grep "/" | cut -d ' ' -f 1)
 
-	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
-	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
-	iptables -D OUTPUT -d $local_subnet -j ACCEPT
+	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP 2>/dev/null
+	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP 2>/dev/null
+	iptables -D OUTPUT -d $local_subnet -j ACCEPT 2>/dev/null
 
-	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
+	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT 2>/dev/null
 }
 
 function _tablesAddLAN() {
