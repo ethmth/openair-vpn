@@ -55,6 +55,18 @@ function is_ip() {
     fi
 }
 
+function _firewallOn() {
+	iptables -A INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -A INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -A INPUT -s $local_subnet -j DROP
+}
+
+function _firewallOff() {
+	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
+	iptables -D INPUT -s $local_subnet -j DROP
+}
+
 
 function _killswitchOff() {
 	iptables -P INPUT ACCEPT
@@ -94,9 +106,14 @@ function _killswitchOff() {
 	ip6tables -D OUTPUT -o lo -j ACCEPT
 
 	ip6tables -P FORWARD ACCEPT
+
+	_firewallOn
 }	
 
 function _killswitchOn() {
+
+	_firewallOff
+
 	iptables -P INPUT DROP
 	iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 	iptables -A INPUT -i tun+ -j ACCEPT
@@ -239,16 +256,9 @@ function _tablesRemoveLAN() {
 	iptables -D OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
 	iptables -D OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
 	iptables -D OUTPUT -d $local_subnet -j ACCEPT
-	# iptables -A OUTPUT -d $local_subnet -j DROP
 
-	# iptables -D INPUT -s $local_subnet -p udp --dport 53 -j DROP
-	# iptables -D INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 	iptables -D INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
 	iptables -D INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -D INPUT -s $local_subnet -j DROP
-	
-	# iptables -A OUTPUT -d $local_subnet -j DROP
-	iptables -A INPUT -s $local_subnet -j DROP
 }
 
 function _tablesAddLAN() {
@@ -257,16 +267,10 @@ function _tablesAddLAN() {
 
 	iptables -A OUTPUT -d $local_subnet -p udp --dport 53 -j DROP
 	iptables -A OUTPUT -d $local_subnet -p tcp --dport 53 -j DROP
-	# iptables -D OUTPUT -d $local_subnet -j DROP
 	iptables -A OUTPUT -d $local_subnet -j ACCEPT
 
-	iptables -D INPUT -s $local_subnet -j DROP
-
-	# iptables -A INPUT -s $local_subnet -p udp --dport 53 -j DROP
-	# iptables -A INPUT -s $local_subnet -p tcp --dport 53 -j DROP
 	iptables -A INPUT -p tcp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
 	iptables -A INPUT -p udp -m multiport --dports $INCOMING_PORTS -s $local_subnet -j ACCEPT
-	iptables -A INPUT -s $local_subnet -j DROP
 }
 
 function _updateeverything() {
@@ -676,7 +680,15 @@ function lan() {
 			echo "LAN Already Off"
 			exit 1
 		fi
-		_tablesRemoveLAN
+		ks_status=""	
+		if [[ -f "$DIR/.killswitch_status" ]]; then
+			ks_status=$(cat "$DIR/.killswitch_status")
+		fi
+		if [ "$ks_status" == "on" ]; then
+			_tablesRemoveLAN
+		else
+			echo "Killswitch not on, so not applying rules, but settings LAN to off for future"
+		fi
 		
 		echo "off" > $DIR/.lan_status
 		if ! [[ $EUID -ne 0 ]]; then
