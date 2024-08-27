@@ -7,4 +7,4 @@ Type=oneshot
 ExecStart=/usr/local/bin/vpn init-killswitch
 
 [Install]
-WantedBy=multi-user.target network.target
+WantedBy=network.target
