@@ -14,7 +14,7 @@ HOST_TO_PING="1.1.1.1"
 DNS_SERVER="1.1.1.1"
 WG_IFACE="tun0"
 
-INCOMING_PORTS="22,1714:1764"
+INCOMING_PORTS="22,8761,1714:1764"
 
 function has_local_ip() {
   local_ip=$(ip addr show "$INTERFACE" | grep -oP 'inet\s+\K[\d.]+')
