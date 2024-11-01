@@ -746,6 +746,10 @@ function init_killswitch() {
 }
 
 function init_connect() {
+	while ! has_local_ip; do
+  		echo "Waiting for a local IP address..."
+  		sleep 1
+	done
 	connect
 	lan $LAN_DEFAULT
 }
