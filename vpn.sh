@@ -718,10 +718,27 @@ function reset() {
 	rm $DIR/.poked_ips
 	rm $DIR/.lan_status
 	rm $DIR/$WG_IFACE.conf
+	rm $DIR/.isHidden
 }
 
 function update() {
 	_updateeverything	
+}
+
+function show() {
+	echo "false" > $DIR/.isHidden
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.isHidden
+	fi
+	killall -1 vpn-listen 2>/dev/null
+}
+
+function hide() {
+	echo "true" > $DIR/.isHidden
+	if ! [[ $EUID -ne 0 ]]; then
+		chmod 666 $DIR/.isHidden
+	fi
+	killall -1 vpn-listen 2>/dev/null
 }
 
 function init() {
@@ -783,6 +800,10 @@ elif [ "$1" == "reset" ]; then
 	reset ${@:2:$#-1}
 elif [ "$1" == "update" ]; then
 	update ${@:2:$#-1}
+elif [ "$1" == "show" ]; then
+	show ${@:2:$#-1}
+elif [ "$1" == "hide" ]; then
+	hide ${@:2:$#-1}
 elif [ "$1" == "init" ]; then
 	init ${@:2:$#-1}
 elif [ "$1" == "init-killswitch" ]; then
@@ -800,6 +821,8 @@ else
 	printf	"\t lan\n"
 	printf	"\t reset\n"
 	printf	"\t update\n"
+	printf	"\t show\n"
+	printf	"\t hide\n"
 	printf	"\t init\n"
 	printf	"\t init-killswitch\n"
 	printf	"\t init-connect\n"

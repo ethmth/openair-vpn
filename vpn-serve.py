@@ -8,6 +8,8 @@ DIR="/home/me/.vpn"
 
 app = Flask(__name__)
 
+# TODO: Update this to take .isHidden into consideration
+
 @app.route("/")
 def home():
 	try:
