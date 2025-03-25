@@ -163,6 +163,36 @@ function _killswitchOn() {
 	ip6tables -P FORWARD DROP
 }
 
+function _killswitchForwardRulesOn() {
+	if ! iptables-save | grep -q -- "-A FORWARD -i tun+ -o virbr+ -j ACCEPT"; then
+		iptables -A FORWARD -i tun+ -o virbr+ -j ACCEPT
+	fi
+	if ! iptables-save | grep -q -- "-A FORWARD -i virbr+ -o tun+ -j ACCEPT"; then
+		iptables -A FORWARD -i virbr+ -o tun+ -j ACCEPT
+	fi
+	if ! iptables-save | grep -q -- "-A FORWARD -i virbr+ -o virbr+ -j ACCEPT"; then
+		iptables -A FORWARD -i virbr+ -o virbr+ -j ACCEPT
+	fi
+	if ! iptables-save | grep -q -- "-A FORWARD -i vnet+ -o vnet+ -j ACCEPT"; then
+		iptables -A FORWARD -i vnet+ -o vnet+ -j ACCEPT
+	fi
+	if ! iptables-save | grep -q -- "-A FORWARD -i virbr+ -o vnet+ -j ACCEPT"; then
+		iptables -A FORWARD -i virbr+ -o vnet+ -j ACCEPT
+	fi
+	if ! iptables-save | grep -q -- "-A FORWARD -i vnet+ -o virbr+ -j ACCEPT"; then
+		iptables -A FORWARD -i vnet+ -o virbr+ -j ACCEPT
+	fi
+}
+
+function _killswitchForwardRulesOff() {
+	iptables -D FORWARD -i tun+ -o virbr+ -j ACCEPT
+	iptables -D FORWARD -i virbr+ -o tun+ -j ACCEPT
+	iptables -D FORWARD -i virbr+ -o virbr+ -j ACCEPT
+	iptables -D FORWARD -i vnet+ -o vnet+ -j ACCEPT
+	iptables -D FORWARD -i virbr+ -o vnet+ -j ACCEPT
+	iptables -D FORWARD -i vnet+ -o virbr+ -j ACCEPT
+}
+
 function _edit_wg_config() {
 	file=$1
 	ip_address=$2
@@ -769,6 +799,7 @@ function init_connect() {
 	done
 	connect
 	lan $LAN_DEFAULT
+	_killswitchForwardRulesOn
 }
 
 function init_check() {
@@ -812,6 +843,10 @@ elif [ "$1" == "init-connect" ]; then
 	init_connect ${@:2:$#-1}
 elif [ "$1" == "init-check" ]; then
 	init_check ${@:2:$#-1}
+elif [ "$1" == "test-on" ]; then
+	_killswitchForwardRulesOn
+elif [ "$1" == "test-off" ]; then
+	_killswitchForwardRulesOff
 else 
 	printf "Options \n"
 	printf	"\t check\n"
