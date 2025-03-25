@@ -799,7 +799,6 @@ function init_connect() {
 	done
 	connect
 	lan $LAN_DEFAULT
-	_killswitchForwardRulesOn
 }
 
 function init_check() {
