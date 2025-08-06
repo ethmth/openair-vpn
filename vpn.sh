@@ -209,9 +209,9 @@ function _edit_wg_config() {
 		fi
 
 		# Add a MTU field to the Interface section of the wireguard config if not already present
-		if ! grep -q "^MTU *= *" "$file"; then
-			sed -i "/^\[Interface\]/aMTU = 1500" "$file"
-		fi
+		#if ! grep -q "^MTU *= *" "$file"; then
+		#	sed -i "/^\[Interface\]/aMTU = 1500" "$file"
+		#fi
 	fi
 }
 
