@@ -807,6 +807,9 @@ function init_connect() {
 }
 
 function init_check() {
+	# clear status at beginning
+	rm $DIR/.statusmessage
+	killall -1 vpn-listen 2>/dev/null
 	while ! check_internet_connectivity; do
   		echo "No internet connectivity. Waiting..."
   		sleep 1
