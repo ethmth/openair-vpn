@@ -792,8 +792,11 @@ function init() {
     _updateeverything
 }
 
-function init_killswitch() {
+function init_reset() {
 	reset
+}
+
+function init_killswitch() {
 	killswitch on
 }
 
@@ -807,9 +810,6 @@ function init_connect() {
 }
 
 function init_check() {
-	# clear status at beginning
-	rm $DIR/.statusmessage
-	killall -1 vpn-listen 2>/dev/null
 	while ! check_internet_connectivity; do
   		echo "No internet connectivity. Waiting..."
   		sleep 1
@@ -844,6 +844,8 @@ elif [ "$1" == "hide" ]; then
 	hide ${@:2:$#-1}
 elif [ "$1" == "init" ]; then
 	init ${@:2:$#-1}
+elif [ "$1" == "init-reset" ]; then
+	init_reset ${@:2:$#-1}
 elif [ "$1" == "init-killswitch" ]; then
 	init_killswitch ${@:2:$#-1}
 elif [ "$1" == "init-connect" ]; then

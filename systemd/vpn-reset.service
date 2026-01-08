@@ -1,0 +1,9 @@
+[Unit]
+Description=Run VPN init-reset at boot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/vpn init-reset
+
+[Install]
+WantedBy=multi-user.target

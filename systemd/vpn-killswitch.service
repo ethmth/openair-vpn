@@ -1,6 +1,8 @@
 [Unit]
 Description=Run VPN init-killswitch at boot
 Before=network.target
+After=vpn-reset.service
+Wants=vpn-reset.service
 
 [Service]
 Type=oneshot

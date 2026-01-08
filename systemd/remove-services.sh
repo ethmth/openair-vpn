@@ -25,6 +25,10 @@ if [ -f "/etc/systemd/system/vpn-killswitch.service" ]; then
 	rm /etc/systemd/system/vpn-killswitch.service
 fi
 
+if [ -f "/etc/systemd/system/vpn-reset.service" ]; then
+	rm /etc/systemd/system/vpn-reset.service
+fi
+
 if [ -f "/etc/systemd/system/vpn-update.service" ]; then
 	rm /etc/systemd/system/vpn-update.service
 fi

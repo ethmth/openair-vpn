@@ -22,6 +22,11 @@ if ! [ -f "vpn-killswitch.service" ]; then
 	exit 1
 fi
 
+if ! [ -f "vpn-reset.service" ]; then
+	echo "vpn-reset.service doesn't exist."
+	exit 1
+fi
+
 if ! [ -f "vpn-update.service" ]; then
 	echo "vpn-update.service doesn't exist."
 	exit 1
@@ -35,6 +40,7 @@ fi
 cp vpn-check.service /etc/systemd/system/vpn-check.service
 cp vpn-connect.service /etc/systemd/system/vpn-connect.service
 cp vpn-killswitch.service /etc/systemd/system/vpn-killswitch.service
+cp vpn-reset.service /etc/systemd/system/vpn-reset.service
 
 cp vpn-update.service /etc/systemd/system/vpn-update.service
 cp vpn-update.timer /etc/systemd/system/vpn-update.timer
@@ -42,6 +48,7 @@ cp vpn-update.timer /etc/systemd/system/vpn-update.timer
 systemctl enable vpn-check.service
 systemctl enable vpn-connect.service
 systemctl enable vpn-killswitch.service
+systemctl enable vpn-reset.service
 
 systemctl enable vpn-update.timer
 

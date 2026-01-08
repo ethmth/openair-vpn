@@ -1,6 +1,7 @@
 [Unit]
 Description=Run VPN init-check at boot
-After=vpn-connect.service
+After=vpn-connect.service vpn-reset.service
+Wants=vpn-reset.service
 
 [Service]
 Type=oneshot

@@ -1,7 +1,7 @@
 [Unit]
 Description=Run VPN init-connect at boot
-After=network-online.target vpn-killswitch.service
-Wants=network-online.target vpn-killswitch.service
+After=network-online.target vpn-killswitch.service vpn-reset.service
+Wants=network-online.target vpn-killswitch.service vpn-reset.service
 
 [Service]
 Type=oneshot
