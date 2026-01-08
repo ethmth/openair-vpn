@@ -750,8 +750,10 @@ function reset() {
 	rm $DIR/.statusmessage
 	rm $DIR/.ipinfo
 	rm $DIR/.killswitch_status
+	echo "off" > $DIR/.killswitch_status
 	rm $DIR/.poked_ips
 	rm $DIR/.lan_status
+	echo "on" > $DIR/.lan_status
 	rm $DIR/$WG_IFACE.conf
 	rm $DIR/.isHidden
 }
