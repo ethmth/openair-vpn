@@ -794,6 +794,7 @@ function init() {
 
 function init_reset() {
 	reset
+	exit 0
 }
 
 function init_killswitch() {
